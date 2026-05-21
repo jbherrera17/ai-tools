@@ -13,6 +13,7 @@ import { requireOwner } from './lib/auth.js';
 import { buildHigginsSystemPrompt } from './lib/higginsSystemPrompt.js';
 import { makeArtifactTools } from './lib/artifactTools.js';
 import { makeMemoryTools } from './lib/memoryTools.js';
+import { makeTeamTools } from './lib/teamTools.js';
 import { embedText } from './lib/embeddings.js';
 
 /**
@@ -135,6 +136,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     tools: {
       ...makeArtifactTools(conversationId),
       ...makeMemoryTools(conversationId),
+      ...makeTeamTools(conversationId),
     },
     stopWhen: stepCountIs(8),  // bound tool loops
     onFinish: async ({ text }) => {

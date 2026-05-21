@@ -562,6 +562,74 @@ html, body { height: 100%; overflow: hidden; }
   border-left: 3px solid var(--agent-accent);
 }
 
+/* Markdown-rendered content inside chat bubbles. Tightens browser defaults
+   so headings/lists/code keep the conversational density of the bubble.
+   Scoped to .message-bubble so the rest of the page isn't affected. */
+.message-bubble > :first-child { margin-top: 0; }
+.message-bubble > :last-child  { margin-bottom: 0; }
+.message-bubble p { margin: 0 0 0.5em; }
+.message-bubble h1,
+.message-bubble h2,
+.message-bubble h3,
+.message-bubble h4 {
+  margin: 0.6em 0 0.35em;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.message-bubble h1 { font-size: 1.1rem; }
+.message-bubble h2 { font-size: 1.0rem; }
+.message-bubble h3 { font-size: 0.94rem; }
+.message-bubble h4 { font-size: 0.9rem; }
+.message-bubble ul,
+.message-bubble ol { margin: 0.25em 0 0.5em; padding-left: 1.4em; }
+.message-bubble li { margin: 0.15em 0; }
+.message-bubble li > p { margin: 0; }
+.message-bubble code {
+  font-family: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+  background: rgba(127, 127, 127, 0.12);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
+.message-bubble pre {
+  margin: 0.4em 0;
+  padding: 0.6em 0.8em;
+  background: rgba(127, 127, 127, 0.08);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  overflow-x: auto;
+  font-size: 0.82em;
+}
+.message-bubble pre code {
+  background: transparent;
+  padding: 0;
+  font-size: inherit;
+}
+.message-bubble blockquote {
+  margin: 0.4em 0;
+  padding-left: 0.8em;
+  border-left: 3px solid var(--border-subtle);
+  color: var(--text-muted);
+}
+.message-bubble a { color: var(--color-primary); text-decoration: underline; }
+.message-bubble hr {
+  border: 0;
+  border-top: 1px solid var(--border-subtle);
+  margin: 0.6em 0;
+}
+.message-bubble table {
+  border-collapse: collapse;
+  margin: 0.4em 0;
+  font-size: 0.85em;
+}
+.message-bubble th,
+.message-bubble td {
+  border: 1px solid var(--border-subtle);
+  padding: 0.3em 0.6em;
+  text-align: left;
+}
+.message-bubble th { background: rgba(127, 127, 127, 0.08); font-weight: 600; }
+
 .message-meta {
   font-size: 0.625rem;
   color: var(--text-muted);
@@ -1504,6 +1572,10 @@ html, body { height: 100%; overflow: hidden; }
   outline-offset: 2px;
 }
 </style>
+<!-- Markdown renderer for chat bubbles. Pinned to a major version so refreshes
+     don't surprise the chat surface. SRI omitted (jsdelivr serves over HTTPS and
+     the version pin is enough for v1). -->
+<script src="https://cdn.jsdelivr.net/npm/marked@13.0.3/marked.min.js"></script>
 </head>
 <body>
 
@@ -2170,8 +2242,36 @@ function escapeHtml(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 }
+// Configure marked once on first use. GFM + line breaks keep parity with how
+// Higgins drafts in chat (lists, headers, fenced code, tables). HTML inside
+// markdown is left disabled — Higgins's text is trusted but we don't want
+// raw <script> from a paste-through to ever execute.
+let _markedReady = false;
+function ensureMarkedReady() {
+  if (_markedReady || typeof window.marked === 'undefined') return;
+  window.marked.setOptions({
+    gfm: true,
+    breaks: true,
+    headerIds: false,
+    mangle: false,
+  });
+  _markedReady = true;
+}
+
 function textToHtml(str) {
-  return escapeHtml(str).replace(/\n/g, '<br>');
+  // Fallback to the previous behavior if marked failed to load — better
+  // than a broken bubble. The CDN might miss on flaky networks.
+  if (typeof window.marked === 'undefined') {
+    return escapeHtml(str).replace(/\n/g, '<br>');
+  }
+  ensureMarkedReady();
+  try {
+    // marked.parse handles escaping of literal HTML inside markdown.
+    return window.marked.parse(String(str ?? ''));
+  } catch (err) {
+    console.warn('[higgins/markdown] render failed; falling back to plain text', err);
+    return escapeHtml(str).replace(/\n/g, '<br>');
+  }
 }
 function authHeaders() {
   const h = { 'Content-Type': 'application/json' };

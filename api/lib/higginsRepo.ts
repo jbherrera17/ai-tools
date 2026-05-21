@@ -406,3 +406,101 @@ export async function forgetMemory(id: string): Promise<void> {
   const { error } = await sb.from('higgins_memories').delete().eq('id', id);
   if (error) throw error;
 }
+
+// ============================================
+// Team sessions — REQ-004 Phase 2
+// ============================================
+
+export interface RosterEntry {
+  slug: string;
+  display_name: string | null;
+}
+
+export interface TeamRoster {
+  orchestrators: RosterEntry[];
+  cross_functional: RosterEntry[];
+  exec_team: RosterEntry[];
+}
+
+export interface TeamSession {
+  id: string;
+  conversation_id: string;
+  roster: TeamRoster;
+  task_summary: string | null;
+  assembled_at: string;
+  approved_at: string | null;
+}
+
+export async function createTeamSession(args: {
+  conversationId: string;
+  roster: TeamRoster;
+  taskSummary?: string | null;
+}): Promise<TeamSession> {
+  const sb = getServiceClient();
+  const { data, error } = await sb
+    .from('higgins_team_sessions')
+    .insert({
+      conversation_id: args.conversationId,
+      roster: args.roster,
+      task_summary: args.taskSummary ?? null,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data as TeamSession;
+}
+
+export async function getTeamSession(id: string): Promise<TeamSession | null> {
+  const sb = getServiceClient();
+  const { data, error } = await sb
+    .from('higgins_team_sessions')
+    .select()
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as TeamSession) ?? null;
+}
+
+/** Active = the most recent approved roster for a conversation. */
+export async function getActiveTeamSession(
+  conversationId: string,
+): Promise<TeamSession | null> {
+  const sb = getServiceClient();
+  const { data, error } = await sb
+    .from('higgins_team_sessions')
+    .select()
+    .eq('conversation_id', conversationId)
+    .not('approved_at', 'is', null)
+    .order('approved_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as TeamSession) ?? null;
+}
+
+export async function approveTeamSession(id: string): Promise<TeamSession> {
+  const sb = getServiceClient();
+  const { data, error } = await sb
+    .from('higgins_team_sessions')
+    .update({ approved_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as TeamSession;
+}
+
+export async function replaceTeamRoster(
+  id: string,
+  roster: TeamRoster,
+): Promise<TeamSession> {
+  const sb = getServiceClient();
+  const { data, error } = await sb
+    .from('higgins_team_sessions')
+    .update({ roster })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as TeamSession;
+}

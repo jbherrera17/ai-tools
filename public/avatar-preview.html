@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Higgins 2.0 — Default Avatar Preview (REQ-004 Phase 2)</title>
+  <link rel="stylesheet" href="styles/base.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Serif+Display&display=swap"
+  />
+  <style>
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 32px 24px 80px;
+      color: var(--color-text, #1a1a2e);
+      background: var(--color-bg, #fafaf7);
+    }
+    h1 {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-weight: 400;
+      font-size: 2rem;
+      margin: 0 0 8px;
+    }
+    p.lede { margin: 0 0 32px; color: #555; max-width: 64ch; }
+    section { margin-top: 40px; }
+    h2 {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-weight: 400;
+      font-size: 1.25rem;
+      margin: 0 0 16px;
+      border-bottom: 1px solid #e0e0e0;
+      padding-bottom: 6px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 8px;
+      padding: 12px 8px;
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+    .card img { width: 96px; height: 96px; display: block; }
+    .character { font-weight: 600; font-size: 0.95rem; }
+    .slug { font-family: 'DM Mono', ui-monospace, monospace; font-size: 0.75rem; color: #888; }
+    a { color: #77bde0; }
+  </style>
+</head>
+<body>
+  <h1>Default Avatar Preview</h1>
+  <p class="lede">
+    SVG monograms on Synergi-palette gradients. Deterministic by skill.id hash.
+    Hand-designed portraits queued for v2 (REQ-004 §6 polish). JB to approve
+    visual quality before the team-assembly modal lands in Phase 3.
+  </p>
+
+  <section>
+    <h2>Higgins</h2>
+    <div class="grid">
+      <div class="card">
+        <img src="/api/avatar?slug=exec-orchestrator&size=128" alt="Higgins" />
+        <div class="character">Higgins</div>
+        <div class="slug">exec-orchestrator</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Department Orchestrators (7)</h2>
+    <div class="grid">
+      <div class="card"><img src="/api/avatar?slug=mkt-orchestrator&size=128" alt="" /><div class="character">Dakota</div><div class="slug">mkt-orchestrator</div></div>
+      <div class="card"><img src="/api/avatar?slug=fin-orchestrator&size=128" alt="" /><div class="character">Marlowe</div><div class="slug">fin-orchestrator</div></div>
+      <div class="card"><img src="/api/avatar?slug=hr-orchestrator&size=128" alt="" /><div class="character">Marlowe-H</div><div class="slug">hr-orchestrator</div></div>
+      <div class="card"><img src="/api/avatar?slug=ops-orchestrator&size=128" alt="" /><div class="character">Riley-O</div><div class="slug">ops-orchestrator</div></div>
+      <div class="card"><img src="/api/avatar?slug=pm-orchestrator&size=128" alt="" /><div class="character">Avery</div><div class="slug">pm-orchestrator</div></div>
+      <div class="card"><img src="/api/avatar?slug=sales-orchestrator&size=128" alt="" /><div class="character">Tatum</div><div class="slug">sales-orchestrator</div></div>
+      <div class="card"><img src="/api/avatar?slug=sup-orchestrator&size=128" alt="" /><div class="character">Sloan</div><div class="slug">sup-orchestrator</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Cross-Functional Helpers (8)</h2>
+    <div class="grid">
+      <div class="card"><img src="/api/avatar?slug=biz-strategy&size=128" alt="" /><div class="character">Ellis</div><div class="slug">biz-strategy</div></div>
+      <div class="card"><img src="/api/avatar?slug=biz-pricing&size=128" alt="" /><div class="character">Kendall</div><div class="slug">biz-pricing</div></div>
+      <div class="card"><img src="/api/avatar?slug=biz-finance&size=128" alt="" /><div class="character">Cameron</div><div class="slug">biz-finance</div></div>
+      <div class="card"><img src="/api/avatar?slug=biz-legal&size=128" alt="" /><div class="character">Morgan-L</div><div class="slug">biz-legal</div></div>
+      <div class="card"><img src="/api/avatar?slug=biz-follow-up&size=128" alt="" /><div class="character">Marley</div><div class="slug">biz-follow-up</div></div>
+      <div class="card"><img src="/api/avatar?slug=biz-data&size=128" alt="" /><div class="character">Skyler</div><div class="slug">biz-data</div></div>
+      <div class="card"><img src="/api/avatar?slug=biz-partnerships&size=128" alt="" /><div class="character">Jordan-B</div><div class="slug">biz-partnerships</div></div>
+      <div class="card"><img src="/api/avatar?slug=biz-customer-success&size=128" alt="" /><div class="character">Peyton</div><div class="slug">biz-customer-success</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Exec Team (2)</h2>
+    <div class="grid">
+      <div class="card"><img src="/api/avatar?slug=exec-chief-of-staff&size=128" alt="" /><div class="character">Jarvis</div><div class="slug">exec-chief-of-staff</div></div>
+      <div class="card"><img src="/api/avatar?slug=exec-strategic-advisor&size=128" alt="" /><div class="character">Alfred</div><div class="slug">exec-strategic-advisor</div></div>
+    </div>
+  </section>
+</body>
+</html>
