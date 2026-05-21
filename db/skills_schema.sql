@@ -114,6 +114,14 @@ CREATE TABLE skill_registry (
   has_command BOOLEAN DEFAULT false,
   keywords TEXT[] DEFAULT '{}',
 
+  -- REQ-004 additions (migration 003) — team assembly + DB-mirrored content
+  tier TEXT,                                -- 'top' | 'orchestrator' | 'specialist' | 'shared' | 'cross_functional'
+  display_name TEXT,                        -- Character name (Dakota, Marlowe…); falls back to name
+  tagline TEXT,                             -- ≤80 chars, team-assembly card subtitle
+  avatar_url TEXT,                          -- Vercel Blob URL; NULL → generated monogram fallback
+  content TEXT,                             -- Full SKILL.md body — DB mirror for Vercel runtime
+  last_seen_at TIMESTAMPTZ,                 -- Last sync_skills.py run that observed this slug on disk
+
   discovered_at TIMESTAMPTZ,
   last_checked_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT now(),
@@ -125,6 +133,8 @@ CREATE INDEX idx_skill_registry_dept         ON skill_registry(department);
 CREATE INDEX idx_skill_registry_source_type  ON skill_registry(source_type);
 CREATE INDEX idx_skill_registry_scope        ON skill_registry(scope);
 CREATE INDEX idx_skill_registry_keywords     ON skill_registry USING GIN(keywords);
+CREATE INDEX idx_skill_registry_tier         ON skill_registry(tier);
+CREATE INDEX idx_skill_registry_last_seen_at ON skill_registry(last_seen_at);
 
 -- ============================================
 -- SKILL VERSIONS

@@ -133,7 +133,7 @@ Anything else is layered on after.
 
 | Field | Type | Purpose |
 |---|---|---|
-| `tier` | text, not null | `'top' \| 'orchestrator' \| 'specialist' \| 'shared' \| 'cross_functional'`. Auto-derived during backfill from slug suffix (`*-orchestrator` → orchestrator, `*-shared` → shared, `biz-*` → cross_functional, `exec-orchestrator` → top). |
+| `tier` | text, not null | `'top' \| 'orchestrator' \| 'exec_team' \| 'specialist' \| 'shared' \| 'cross_functional'`. Auto-derived during backfill from slug (`exec-orchestrator` → top, `*-orchestrator` else → orchestrator, `exec-chief-of-staff` / `exec-strategic-advisor` → exec_team, `biz-*` → cross_functional, `*-shared` content rows → shared, else specialist). The `exec_team` value was added 2026-05-21 during Phase 0 to give Jarvis/Alfred a tier distinct from buried-leaf specialists, since Higgins's prompt names them directly per §11 Phase 1. |
 | `department` | text, not null | `'exec' \| 'fin' \| 'hr' \| 'mkt' \| 'ops' \| 'pm' \| 'sales' \| 'sup' \| 'biz'`. Auto-derived from slug prefix during backfill. |
 | `display_name` | text, nullable | Character name parsed from the `description` frontmatter line (e.g., `"Brand Voice Guardian agent (Harper) for the Marketing team"` → `Harper`). Falls back to `name` if no character. |
 | `tagline` | text, nullable | One-line purpose for the team-assembly card. ≤ 80 chars. Auto-extracted from `description` or first SKILL.md heading. |
@@ -245,8 +245,9 @@ Hand-designed SVG character portraits per agent. **Objective: make agents person
 | **4 — Hierarchical orchestration + attribution** | (a) On approved team, each dept orchestrator becomes a parallel `streamText` call with its full SKILL.md + leaf directory + selected cross-functional helpers as context. (b) Structured response format: `{response_body, contributing_skills: [character_name, ...]}`. (c) Higgins synthesizes across dept responses. (d) `agents_active` indicator badges in card header. (e) Mid-task add/remove for cross-functional + exec team via natural language. | 2 sessions |
 | **5 — User-facing attribution footer + artifact attribution** | (a) Collapsible "Team that worked on this" footer on every team-assembled response, character names lead. (b) Populate `higgins_artifacts.contributing_agents` JSONB from active session on tool execute. (c) Surface attribution in artifact window footer. | 1 session |
 | **6 — Polish + voice rubric** | Animate the team-assembly modal. Run 5-task rubric (see Appendix A). Tune the catalog-injection prompt if Higgins over-recruits. QA the attribution display. | 1 session |
+| **7 — Skills sync admin UI** *(added 2026-05-21)* | Surface FS↔DB drift on the existing `/skills` admin page. Per skill: `last_seen_at`, FS content hash vs DB content hash, "Drift" badge when they differ. Button to trigger an on-demand sync. Builds on the `scripts/sync_skills.py` tool delivered in Phase 0. Required for confident multi-harness skill authoring (Claude CLI, CoWork, Codex) without surprise drift. | 1 session |
 
-**Total to v1-shipped: 8–9 working sessions.**
+**Total to v1-shipped: 8–9 working sessions** (Phase 7 is post-v1 polish; lands after the core flow ships).
 
 ## 12. Open decisions — LOCKED 2026-05-21
 

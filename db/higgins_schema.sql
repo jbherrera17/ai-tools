@@ -96,6 +96,7 @@ CREATE TABLE IF NOT EXISTS higgins_artifacts (
   title           TEXT,
   current_version INTEGER NOT NULL DEFAULT 1,
   blob_url        TEXT,                           -- latest server-rendered file (docx/pptx)
+  contributing_agents JSONB,                      -- REQ-004 §8: hierarchical attribution {orchestrators:{}, cross_functional:[]}
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (conversation_id, slug)
@@ -161,6 +162,26 @@ CREATE INDEX IF NOT EXISTS idx_higgins_mem_embedding_hnsw
   WITH (m = 16, ef_construction = 64);
 
 -- ============================================
+-- TEAM SESSIONS — REQ-004 §8 (migration 003)
+-- One assembled team per conversation; approved_at gates active vs proposed.
+-- ============================================
+CREATE TABLE IF NOT EXISTS higgins_team_sessions (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  conversation_id UUID NOT NULL REFERENCES higgins_conversations(id) ON DELETE CASCADE,
+  roster          JSONB NOT NULL,                  -- {orchestrators:[], cross_functional:[], exec_team:[]}
+  task_summary    TEXT,
+  assembled_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  approved_at     TIMESTAMPTZ                      -- null = proposed; set = approved & active
+);
+
+CREATE INDEX IF NOT EXISTS idx_higgins_team_conv
+  ON higgins_team_sessions(conversation_id, assembled_at DESC);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_higgins_team_active_per_conv
+  ON higgins_team_sessions(conversation_id)
+  WHERE approved_at IS NOT NULL;
+
+-- ============================================
 -- ROW LEVEL SECURITY — deny-by-default
 --
 -- v1 is single-user. All app access uses the service-role key
@@ -176,6 +197,7 @@ ALTER TABLE higgins_messages           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE higgins_artifacts          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE higgins_artifact_versions  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE higgins_memories           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE higgins_team_sessions      ENABLE ROW LEVEL SECURITY;
 
 -- ============================================
 -- MEMORY RECALL FUNCTION — REQ-002 Phase 5

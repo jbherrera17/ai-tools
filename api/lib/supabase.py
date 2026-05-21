@@ -429,6 +429,10 @@ def upsert_skills(skills, source_map):
     Translates the updater's JSON registry into the v2 skill_registry schema.
     Inputs that the updater doesn't yet emit (sourceType, scope, filePath, upstreamUrl)
     fall back to safe defaults — synergi-original / domain-generic / null.
+
+    REQ-004 additions: tier, displayName, tagline, avatarUrl, content, lastSeenAt
+    are passed through when present. Older payloads without these fields skip
+    them (skill_registry's existing values stay intact).
     """
     client = get_admin_client()
     rows = []
@@ -442,7 +446,7 @@ def upsert_skills(skills, source_map):
         if s.get('versions'):
             latest_hash = s['versions'][-1].get('contentHash')
 
-        rows.append({
+        row = {
             'skill_id': s['id'],
             'slug': s['slug'],
             'name': s['name'],
@@ -462,7 +466,23 @@ def upsert_skills(skills, source_map):
             'keywords': s.get('keywords', []),
             'discovered_at': s.get('discoveredAt'),
             'last_checked_at': s.get('lastCheckedAt'),
-        })
+        }
+
+        # REQ-004 fields — only attach if the producer supplied them, so legacy
+        # payloads from sources that don't emit these fields don't blank out
+        # previously-populated values.
+        for src_key, db_col in (
+            ('tier',        'tier'),
+            ('displayName', 'display_name'),
+            ('tagline',     'tagline'),
+            ('avatarUrl',   'avatar_url'),
+            ('content',     'content'),
+            ('lastSeenAt',  'last_seen_at'),
+        ):
+            if src_key in s:
+                row[db_col] = s[src_key]
+
+        rows.append(row)
     synced = 0
     for i in range(0, len(rows), 50):
         batch = rows[i:i+50]
