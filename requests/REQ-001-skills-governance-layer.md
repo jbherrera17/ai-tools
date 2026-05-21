@@ -3,7 +3,7 @@
 **Owner:** JB Herrera
 **Drafted by:** Higgins
 **Date:** 2026-05-18
-**Status:** Approved — decisions closed 2026-05-18
+**Status:** Approved — decisions closed 2026-05-18. Phases 1–3 ✅, Phase 4 ✅ (closed 2026-05-21 via REQ-004 Phase 1), Phase 5 still open (synergi-skills-updater repoint + Sunday cron).
 **Project:** ai-tools/skills + synergi-skills-updater + AIDevelopment/.agents/skills
 
 ---
@@ -107,7 +107,7 @@ Currently `skill_registry.versions` is a JSONB array. Either:
 | **1 — Foundation** | Schema migration (additions in §8), backfill script for 74 skills, smoke-test via `/api/skills/stats`. | 1–2 sessions |
 | **2 — Matching engine** | Content-hash + keyword-overlap matcher in `api/skills.py` (or `lib/`). Tested against synthetic "new version of existing" + "brand new" cases. | 2 sessions |
 | **3 — Curator UX** | Bulk approve, version diff, keyboard nav on `/skills`. Goal: 90-second-per-skill review. | 2 sessions |
-| **4 — Higgins 2.0 hookup** | API integration in `/higgins2`. Consumes `?status=approved` filter. Verify in browser. | 1–2 sessions |
+| **4 — Higgins 2.0 hookup** ✅ *closed 2026-05-21 via REQ-004 Phase 1* | API integration in `/higgins2`. Implemented as DB-backed catalog injection: `api/lib/skillCatalog.ts` loads the three tiered pools (orchestrators / cross-functional / exec_team) with a 5-min cache; `api/lib/higginsSystemPrompt.ts` composes the exec-orchestrator base + runtime overlay + tiered catalog at each chat turn. | 1–2 sessions |
 | **5 — Cron live** | `synergi-skills-updater` configured to write to Supabase, scheduled for Sunday, monitored for 4 weeks. | 1 session + 4-week soak |
 
 Total to v1-shipped: **6–8 working sessions plus a 4-week soak period.**

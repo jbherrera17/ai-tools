@@ -9,6 +9,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "smoke:higgins-repo": "tsx scripts/smoke-higgins-repo.ts",
+    "smoke:higgins-prompt": "tsx scripts/smoke-higgins-prompt.ts",
     "sync-skills": "python3 scripts/sync_skills.py",
     "sync-skills:dry": "python3 scripts/sync_skills.py --dry-run"
   },
