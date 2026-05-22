@@ -23,6 +23,7 @@
  */
 
 import { loadCatalog, loadHigginsBase, buildCatalogBlock } from './skillCatalog.js';
+import { getActiveTeamSession, type TeamRoster } from './higginsRepo.js';
 
 const RUNTIME_OVERLAY = `
 ## Higgins 2.0 runtime context
@@ -45,6 +46,8 @@ Always address the user as "JB". Never "the user", never another name. JB is the
 When JB uses any explicit team phrase — "bring the team together", "assemble the team", "convene the team", "pull the team in", "who would you bring in" — you **must** call the \`assemble_team\` tool. Do not roleplay or pre-narrate what each agent would produce. Do not narrate "the team is briefed" before opening the modal. The tool call IS the action JB asked for; the modal that follows is the visual proof. Pre-narrating defeats the entire point of the surface.
 
 **Override your own prior responses.** If earlier in this conversation you wrote "fan-out is Phase 4" or synthesized inline instead of calling the tool, that was wrong. Ignore it. Going forward, an explicit team phrase from JB requires a tool call, period. Calling \`assemble_team\` has no Phase dependency — it works now and that is what JB is asking you to do.
+
+**Do not re-assemble.** If the "Active team for this conversation" block appears below, the team is already approved. Do NOT call \`assemble_team\` again unless JB explicitly says "reassemble the team" or "swap the team". Proceed with the work; the active roster is who you have.
 
 ### Output discipline
 - Inline answers for conversational questions, clarifications, and anything under ~200 words.
@@ -83,30 +86,66 @@ Don't pile up memories. Save deliberately — high-signal facts and preferences,
 Technology should augment human brilliance, not replace it. JB's core framework is Insight 360: Align 120 → Strategy 120 → Execute 120. Speak as a partner working alongside JB, not as a tool he's instructing.
 `.trim();
 
+interface BuildPromptOptions {
+  today?: string;
+  /** When provided, the active team for this conversation is appended so
+   *  Higgins knows not to re-propose. */
+  conversationId?: string;
+}
+
 /**
  * Composes the full Higgins system prompt: base persona (from DB) + runtime
- * overlay + tiered catalog. Async because the base + catalog are fetched
- * from Supabase (with a 5-min in-memory cache so steady-state turns are
- * effectively in-process).
+ * overlay + tiered catalog + (optional) active team. Async because the base
+ * + catalog are fetched from Supabase (with a 5-min in-memory cache so
+ * steady-state turns are effectively in-process).
  *
  * Callers typically append a memory-recall block to the returned string.
  */
-export async function buildHigginsSystemPrompt(today?: string): Promise<string> {
-  const date = today ?? new Date().toISOString().slice(0, 10);
+export async function buildHigginsSystemPrompt(
+  options: BuildPromptOptions = {},
+): Promise<string> {
+  const date = options.today ?? new Date().toISOString().slice(0, 10);
 
-  const [base, catalog] = await Promise.all([
+  const [base, catalog, activeTeam] = await Promise.all([
     loadHigginsBase(),
     loadCatalog(),
+    options.conversationId
+      ? getActiveTeamSession(options.conversationId).catch((err) => {
+          console.warn('[higginsSystemPrompt] active team lookup failed', err);
+          return null;
+        })
+      : Promise.resolve(null),
   ]);
 
   const overlay = RUNTIME_OVERLAY.replace('{{TODAY}}', date);
   const catalogBlock = buildCatalogBlock(catalog);
+  const teamBlock = activeTeam?.roster ? buildActiveTeamBlock(activeTeam.roster) : '';
 
-  // Order matters. Base first establishes identity & workflows; overlay
-  // layers the Higgins-2.0-specific runtime contract on top; catalog
-  // closes with the team directory so the LLM has the latest slugs and
-  // character names in working memory when responding.
-  return [base, overlay, catalogBlock]
+  // Order: base (identity) → overlay (runtime rules) → catalog (full
+  // directory) → active team (current approved roster, so the "do not
+  // re-assemble" rule has concrete state to reference).
+  return [base, overlay, catalogBlock, teamBlock]
     .filter((s) => s && s.trim().length > 0)
     .join('\n\n');
+}
+
+function buildActiveTeamBlock(roster: TeamRoster): string {
+  const lines: string[] = [];
+  const lane = (label: string, entries: TeamRoster['orchestrators']) => {
+    if (!entries.length) return;
+    lines.push(
+      `- ${label}: ` +
+      entries.map((e) => `${e.display_name ?? e.slug} (\`${e.slug}\`)`).join(', '),
+    );
+  };
+  lane('Department Orchestrators', roster.orchestrators);
+  lane('Cross-functional helpers', roster.cross_functional);
+  lane('Exec team', roster.exec_team);
+  if (lines.length === 0) return '';
+  return (
+    '## Active team for this conversation\n\n' +
+    'This roster has been approved by JB. Use it for the current task. ' +
+    'Do not call `assemble_team` again unless JB explicitly says "reassemble" or "swap the team".\n\n' +
+    lines.join('\n')
+  );
 }

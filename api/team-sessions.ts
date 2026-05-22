@@ -36,7 +36,20 @@ interface PatchBody {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!requireOwner(req, res)) return;
+  try {
+    await route(req, res);
+  } catch (err) {
+    const msg = (err as Error)?.message ?? String(err);
+    console.error('[higgins/team-sessions] error', msg, err);
+    // Ensure we always return a structured 500 — an unhandled async throw
+    // here otherwise lands as a generic Vercel 500 with no JSON body.
+    if (!res.headersSent) {
+      res.status(500).json({ error: msg });
+    }
+  }
+}
 
+async function route(req: VercelRequest, res: VercelResponse) {
   // ── GET ───────────────────────────────────────────────────────────
   if (req.method === 'GET') {
     const id = singleParam(req.query.id);

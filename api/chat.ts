@@ -128,7 +128,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   });
 
   const modelMessages = await convertToModelMessages(uiMessages);
-  const systemPrompt = await buildHigginsSystemPrompt();
+  const systemPrompt = await buildHigginsSystemPrompt({ conversationId });
   const result = streamText({
     model: 'anthropic/claude-opus-4-7',
     system: systemPrompt + memoryBlock,

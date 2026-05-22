@@ -480,6 +480,30 @@ export async function getActiveTeamSession(
 
 export async function approveTeamSession(id: string): Promise<TeamSession> {
   const sb = getServiceClient();
+
+  // The unique index `uniq_higgins_team_active_per_conv` enforces one
+  // approved session per conversation. Before approving a new one, retire
+  // any previously-approved session for the same conversation by nulling
+  // its approved_at — the row stays for audit, but it no longer counts as
+  // "the active team". `getActiveTeamSession` already returns the most
+  // recent approved row, so the latest approval wins.
+  const existing = await sb
+    .from('higgins_team_sessions')
+    .select('conversation_id')
+    .eq('id', id)
+    .maybeSingle();
+  if (existing.error) throw existing.error;
+  if (!existing.data) throw new Error('team session not found: ' + id);
+  const convId = (existing.data as { conversation_id: string }).conversation_id;
+
+  const retire = await sb
+    .from('higgins_team_sessions')
+    .update({ approved_at: null })
+    .eq('conversation_id', convId)
+    .neq('id', id)
+    .not('approved_at', 'is', null);
+  if (retire.error) throw retire.error;
+
   const { data, error } = await sb
     .from('higgins_team_sessions')
     .update({ approved_at: new Date().toISOString() })

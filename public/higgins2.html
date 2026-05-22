@@ -273,17 +273,119 @@
 }
 .tm-section { margin-top: var(--space-4); }
 .tm-section:first-child { margin-top: 0; }
+.tm-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
 .tm-section-label {
   font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-muted);
-  margin-bottom: var(--space-2);
 }
 .tm-section-label .tm-count {
   margin-left: 6px;
   color: var(--agent-accent);
+}
+
+.tm-section-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px 4px 8px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-default);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--duration-fast);
+}
+.tm-section-add-btn svg { width: 12px; height: 12px; }
+.tm-section-add-btn:not([disabled]):hover {
+  color: var(--agent-accent);
+  border-color: var(--agent-accent);
+  background: var(--agent-accent-muted);
+}
+.tm-section-add-btn.open {
+  color: var(--agent-accent);
+  border-color: var(--agent-accent);
+  background: var(--agent-accent-muted);
+}
+.tm-section-add-btn[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.tm-picker {
+  margin-top: var(--space-2);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  padding: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+  animation: tmPickerIn 0.15s ease-out;
+}
+@keyframes tmPickerIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.tm-picker-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--duration-fast), border-color var(--duration-fast);
+  width: 100%;
+}
+.tm-picker-item:hover {
+  background: var(--surface-overlay);
+  border-color: var(--agent-accent);
+}
+.tm-picker-item img {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  flex: 0 0 32px;
+}
+.tm-picker-item-text { min-width: 0; flex: 1; }
+.tm-picker-item-character {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+.tm-picker-item-slug {
+  font-family: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  line-height: 1.2;
+}
+.tm-picker-item-tagline {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  line-height: 1.3;
+  margin-top: 2px;
+}
+.tm-picker-empty {
+  padding: var(--space-3);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
 }
 
 .tm-cards {
@@ -2499,12 +2601,13 @@ document.addEventListener('keydown', (e) => {
 // linger as a stale NULL-approved_at record.
 // ============================================
 const TeamModal = (() => {
+  // minCount = orchestrator floor; maxCount mirrors REQ-004 §12 #3 hard caps.
   const LANES = [
-    { key: 'orchestrators',    label: 'Department Orchestrators', minCount: 1 },
-    { key: 'cross_functional', label: 'Cross-functional helpers', minCount: 0 },
-    { key: 'exec_team',        label: 'Exec team',                minCount: 0 },
+    { key: 'orchestrators',    label: 'Department Orchestrators', minCount: 1, maxCount: 4 },
+    { key: 'cross_functional', label: 'Cross-functional helpers', minCount: 0, maxCount: 6 },
+    { key: 'exec_team',        label: 'Exec team',                minCount: 0, maxCount: 2 },
   ];
-  let state = null;       // { sessionId, taskSummary, roster, originalRoster, conversationId }
+  let state = null;       // { sessionId, taskSummary, roster, originalRoster, conversationId, availablePools, pickerOpen }
   let working = false;    // request in flight — block re-entrancy
 
   function open(payload) {
@@ -2515,16 +2618,33 @@ const TeamModal = (() => {
     state = {
       sessionId: payload.session_id,
       taskSummary: payload.task_summary || '',
-      // Deep clone — the modal may mutate the lanes via Remove
+      // Deep clone — the modal may mutate the lanes via Remove / Add
       roster: deepCloneRoster(payload.roster),
       originalRoster: deepCloneRoster(payload.roster),
       conversationId: localStorage.getItem(HIGGINS_CONV_KEY) || null,
+      availablePools: null,   // populated by the catalog fetch below
+      pickerOpen: null,       // which lane's "+ Add" picker is currently expanded (string key or null)
     };
     document.getElementById('teamModalTask').textContent = state.taskSummary || '(no task summary)';
     document.getElementById('teamModalInfo').textContent = 'Review the team and approve to continue.';
     document.getElementById('teamModalApproveBtn').disabled = false;
     render();
     document.getElementById('teamModalScrim').classList.add('open');
+    // Fetch the full catalog so the "+ Add" pickers can show what wasn't
+    // proposed. Best-effort: if it fails, the Add buttons stay disabled
+    // with a tooltip — Remove + Approve still work.
+    loadAvailablePools().then(() => { if (state) render(); });
+  }
+
+  async function loadAvailablePools() {
+    try {
+      const res = await fetch('/api/skills-catalog', { headers: authHeaders() });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      if (state) state.availablePools = data;
+    } catch (err) {
+      console.warn('[TeamModal] catalog fetch failed; Add buttons will be disabled', err);
+    }
   }
 
   function close() {
@@ -2550,14 +2670,105 @@ const TeamModal = (() => {
         ? `<div class="tm-cards">${entries.map((e) => renderCard(lane.key, e, entries.length, lane.minCount)).join('')}</div>`
         : `<div class="tm-empty-lane">— none —</div>`;
       const count = entries.length ? `<span class="tm-count">${entries.length}</span>` : '';
+      const addBtn = renderAddButton(lane);
+      const picker = state.pickerOpen === lane.key ? renderPicker(lane) : '';
       return `<div class="tm-section">
-        <div class="tm-section-label">${lane.label}${count}</div>
+        <div class="tm-section-header">
+          <div class="tm-section-label">${lane.label}${count}</div>
+          ${addBtn}
+        </div>
         ${cards}
+        ${picker}
       </div>`;
     }).join('');
     // Update approve enable/disable based on min orchestrator rule
     const okay = state.roster.orchestrators.length >= 1;
     document.getElementById('teamModalApproveBtn').disabled = !okay;
+  }
+
+  function unselectedForLane(laneKey) {
+    if (!state || !state.availablePools) return [];
+    const pool = state.availablePools[laneKey] || [];
+    const selected = new Set((state.roster[laneKey] || []).map((e) => e.slug));
+    return pool.filter((e) => !selected.has(e.slug));
+  }
+
+  function renderAddButton(lane) {
+    const entries = state.roster[lane.key] || [];
+    const atCap = entries.length >= lane.maxCount;
+    const remaining = unselectedForLane(lane.key);
+    const catalogReady = state.availablePools != null;
+    let title, disabled;
+    if (!catalogReady) {
+      title = 'Loading available agents…';
+      disabled = true;
+    } else if (atCap) {
+      title = 'Maximum ' + lane.maxCount + ' reached for this lane';
+      disabled = true;
+    } else if (remaining.length === 0) {
+      title = 'All available agents already on the team';
+      disabled = true;
+    } else {
+      title = 'Add another (' + remaining.length + ' available)';
+      disabled = false;
+    }
+    const expanded = state.pickerOpen === lane.key;
+    return `<button class="tm-section-add-btn ${expanded ? 'open' : ''}" ${disabled ? 'disabled' : ''}
+            onclick="TeamModal.togglePicker('${escAttr(lane.key)}')"
+            title="${escAttr(title)}" aria-expanded="${expanded ? 'true' : 'false'}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span>Add</span>
+    </button>`;
+  }
+
+  function renderPicker(lane) {
+    const remaining = unselectedForLane(lane.key);
+    if (remaining.length === 0) {
+      return `<div class="tm-picker"><div class="tm-picker-empty">All agents in this lane already on the team.</div></div>`;
+    }
+    return `<div class="tm-picker">
+      ${remaining.map((e) => {
+        const character = e.display_name || '(no character)';
+        const tagline = e.tagline || '';
+        const avatarUrl = '/api/avatar?slug=' + encodeURIComponent(e.slug) + '&size=40';
+        return `<button class="tm-picker-item" onclick="TeamModal.addAgent('${escAttr(lane.key)}', '${escAttr(e.slug)}')" title="Add ${escAttr(character)} to the team">
+          <img src="${avatarUrl}" alt="" />
+          <div class="tm-picker-item-text">
+            <div class="tm-picker-item-character">${escapeHtml(character)}</div>
+            <div class="tm-picker-item-slug">${escapeHtml(e.slug)}</div>
+            ${tagline ? `<div class="tm-picker-item-tagline">${escapeHtml(tagline)}</div>` : ''}
+          </div>
+        </button>`;
+      }).join('')}
+    </div>`;
+  }
+
+  function togglePicker(laneKey) {
+    if (!state) return;
+    state.pickerOpen = (state.pickerOpen === laneKey) ? null : laneKey;
+    render();
+  }
+
+  function addAgent(laneKey, slug) {
+    if (!state || working) return;
+    const lane = LANES.find((l) => l.key === laneKey);
+    if (!lane) return;
+    const current = state.roster[laneKey] || [];
+    if (current.length >= lane.maxCount) return;
+    if (current.some((e) => e.slug === slug)) return;
+    const pool = (state.availablePools && state.availablePools[laneKey]) || [];
+    const entry = pool.find((e) => e.slug === slug);
+    if (!entry) return;
+    current.push({
+      slug: entry.slug,
+      display_name: entry.display_name ?? null,
+      tagline: entry.tagline ?? null,
+    });
+    state.roster[laneKey] = current;
+    // Close the picker once a choice is made so the user gets feedback that
+    // the agent landed; they can re-open if they want another.
+    state.pickerOpen = null;
+    render();
   }
 
   function renderCard(laneKey, entry, laneSize, laneMin) {
@@ -2626,11 +2837,17 @@ const TeamModal = (() => {
       showActiveTeamBadge(state.roster);
       showToast('Team approved');
       close();
+      // Auto-continue: signal Higgins to proceed with the approved roster.
+      // Without this, JB would have to type a follow-up to unblock the chat.
+      try { sendMessage('Team approved — proceed with the workstreams.'); }
+      catch (e) { console.warn('[TeamModal] auto-continue failed', e); }
     } catch (err) {
       console.error('[TeamModal] approve failed', err);
-      document.getElementById('teamModalInfo').textContent = 'Approve failed — see console.';
+      const msg = (err && err.message) ? err.message : 'unknown error';
+      document.getElementById('teamModalInfo').textContent = 'Approve failed: ' + msg;
       document.getElementById('teamModalApproveBtn').disabled = false;
       document.getElementById('teamModalCancelBtn').disabled = false;
+      showToast('Approve failed — see modal footer');
       working = false;
     }
   }
@@ -2664,7 +2881,7 @@ const TeamModal = (() => {
 
   function isWorking() { return working; }
 
-  return { open, close, approve, cancel, removeAgent, handleScrimClick, isWorking };
+  return { open, close, approve, cancel, removeAgent, addAgent, togglePicker, handleScrimClick, isWorking };
 })();
 window.TeamModal = TeamModal;
 
@@ -2792,9 +3009,11 @@ function cancelMessage() {
   }
 }
 
-async function sendMessage() {
+async function sendMessage(overrideText) {
   const input = document.getElementById('higginsInput');
-  const text = input.value.trim();
+  // overrideText supports programmatic continuation (e.g. after team approval)
+  // without trampling the textarea or requiring the user to retype.
+  const text = (typeof overrideText === 'string' ? overrideText : input.value).trim();
   if (!text || responding) return;
   if (!window.HigginsStream) {
     console.error('Higgins stream parser not loaded yet');
@@ -2803,8 +3022,10 @@ async function sendMessage() {
   responding = true;
   setSendState(true);
   currentAbortController = new AbortController();
-  addMessage('user', textToHtml(text));
-  input.value = ''; autoGrow(input); toggleSend();
+  addMessage('user', textToHtml(text), text);
+  if (typeof overrideText !== 'string') {
+    input.value = ''; autoGrow(input); toggleSend();
+  }
 
   const face = document.getElementById('avatarFace');
   face.classList.add('thinking');
