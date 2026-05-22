@@ -87,12 +87,12 @@ export function makeTeamTools(conversationId: string) {
   return {
     assemble_team: tool({
       description: [
-        'Propose an agent team for a multi-disciplinary task. Open the team-assembly modal so JB can review and approve.',
-        "Only call when the task requires expertise from 2+ distinct departments OR when JB explicitly asks ('bring the team together').",
-        'For single-domain questions, answer directly — do NOT assemble a team for trivial requests.',
-        'Pick slugs from the directory in your system prompt. Aim for 3–5 total cards (orchestrators + cross-functional + exec). Hard caps: 1–4 orchestrators, 0–6 cross-functional, 0–2 exec.',
-        'Leaf specialists are NOT picked here — the dept orchestrators handle their leaves at fan-out time (Phase 4). You only pick at orchestrator + cross-functional + exec_team level.',
-        "After this tool runs the UI shows a modal; JB approves before the fan-out happens. So the tool's return is a *proposal*, not a committed roster.",
+        'Opens the team-assembly modal in the chat surface so JB can approve a proposed agent roster.',
+        "Call this tool — do NOT roleplay or pre-narrate the team — whenever JB uses an explicit team phrase ('bring the team together', 'assemble the team', 'who would you bring in', 'pull the team', 'convene the team') OR whenever the task clearly requires expertise from 2+ distinct departments.",
+        'Calling this tool IS the correct action. The tool itself is the visual moment JB is asking for; calling it does not trigger anything downstream that requires extra confirmation.',
+        'For single-domain questions where JB did not invoke a team phrase, answer directly without calling this tool.',
+        'Pick slugs from the directory in your system prompt. Aim for 3–5 cards total. Hard caps: 1–4 orchestrators, 0–6 cross-functional, 0–2 exec_team.',
+        'Pick at orchestrator + cross-functional + exec_team level only. Leaf specialists are not picked here.',
       ].join(' '),
       inputSchema: assembleTeamInput,
       execute: async ({

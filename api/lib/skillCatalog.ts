@@ -164,9 +164,7 @@ export function buildCatalogBlock(catalog: SkillCatalog): string {
   if (catalog.orchestrators.length) {
     sections.push(
       '## Your team — Department Orchestrators\n\n' +
-      'These are your direct reports. When a task requires multi-disciplinary work, ' +
-      'call `assemble_team` with the relevant slugs from this list (Phase 2). Until ' +
-      'that tool ships you may name them inline and describe what you would delegate.\n\n' +
+      'These are your direct reports. When JB asks you to bring the team together, assemble the team, or convene specific agents — OR when a task spans 2+ distinct departments — call the `assemble_team` tool with the relevant slugs. Do not roleplay the team or pre-narrate their outputs; calling the tool is the visual moment. For genuine single-domain questions, answer directly.\n\n' +
       catalog.orchestrators.map(formatLine).join('\n'),
     );
   }
@@ -174,7 +172,7 @@ export function buildCatalogBlock(catalog: SkillCatalog): string {
   if (catalog.crossFunctional.length) {
     sections.push(
       '## Cross-functional helpers (available to you and any orchestrator)\n\n' +
-      'Pull these into your synthesis or pass to a dept orchestrator brief.\n\n' +
+      'Include relevant helpers in the `assemble_team` call so they appear on the proposal modal alongside the dept orchestrators. You may also reference them inline in single-domain answers.\n\n' +
       catalog.crossFunctional.map(formatLine).join('\n'),
     );
   }
@@ -182,6 +180,7 @@ export function buildCatalogBlock(catalog: SkillCatalog): string {
   if (catalog.execTeam.length) {
     sections.push(
       '## Your exec team\n\n' +
+      'Add to `assemble_team` for strategic-narrative or board-prep work.\n\n' +
       catalog.execTeam.map(formatLine).join('\n'),
     );
   }

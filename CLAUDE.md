@@ -5,10 +5,20 @@ A multi-tool web app for solo entrepreneurs — AI digest, AI stack education, s
 ## Quick commands
 
 ```bash
-vercel dev          # Local dev server (http://localhost:3000)
-vercel --prod       # Deploy to production
+npm run dev:start    # Local dev server (http://localhost:3000)
+npm run dev:stop     # Gracefully stop dev (SIGINT → SIGKILL escalation; clears port 3000)
+npm run dev:restart  # Stop + restart in one shot
+vercel --prod        # Deploy to production
 pip install -r requirements.txt
 ```
+
+> `dev:start` (not `dev`) avoids a Vercel CLI gotcha: an npm script literally
+> named `dev` makes `vercel dev` recursively invoke itself.
+
+`dev:stop` is the safe way to clean up. `vercel dev` spawns helper workers
+(esbuild, runtime sandbox) that can survive a parent kill — `scripts/kill-dev.sh`
+finds every PID on port 3000, SIGINTs them, waits 5s, then escalates to SIGKILL.
+Always prefer this over `pkill node`.
 
 ## Where things live
 

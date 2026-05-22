@@ -205,6 +205,211 @@
 }
 
 /* ============================================
+   TEAM ASSEMBLY MODAL — REQ-004 Phase 3
+   ============================================ */
+.team-modal-scrim {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 250; /* above memory inspector + artifact windows */
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  backdrop-filter: blur(2px);
+}
+.team-modal-scrim.open { display: flex; animation: teamScrimIn 0.18s ease-out; }
+@keyframes teamScrimIn { from { opacity: 0 } to { opacity: 1 } }
+
+.team-modal {
+  background: var(--surface-raised);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  width: min(880px, 100%);
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: teamModalIn 0.22s cubic-bezier(0.2, 0.7, 0.25, 1);
+}
+@keyframes teamModalIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.tm-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--border-default);
+}
+.tm-header-icon {
+  flex: 0 0 36px;
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--agent-accent-muted);
+  color: var(--agent-accent);
+  border-radius: 10px;
+}
+.tm-header-text { flex: 1; min-width: 0; }
+.tm-header-text h2 {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.tm-task {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.tm-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-3) var(--space-4) var(--space-4);
+}
+.tm-section { margin-top: var(--space-4); }
+.tm-section:first-child { margin-top: 0; }
+.tm-section-label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: var(--space-2);
+}
+.tm-section-label .tm-count {
+  margin-left: 6px;
+  color: var(--agent-accent);
+}
+
+.tm-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-3);
+}
+
+.tm-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: var(--space-3) var(--space-2) var(--space-3);
+  background: var(--surface-overlay);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  transition: border-color var(--duration-fast);
+  text-align: center;
+}
+.tm-card:hover { border-color: var(--agent-accent); }
+.tm-card img {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  display: block;
+}
+.tm-card-character {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.tm-card-slug {
+  font-family: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  word-break: break-all;
+}
+.tm-card-tagline {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  line-height: 1.35;
+  margin-top: 2px;
+}
+.tm-card-remove {
+  position: absolute;
+  top: 6px; right: 6px;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--border-default);
+  background: var(--surface-raised);
+  color: var(--text-muted);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--duration-fast), color var(--duration-fast), border-color var(--duration-fast);
+}
+.tm-card:hover .tm-card-remove,
+.tm-card-remove:focus-visible { opacity: 1; }
+.tm-card-remove:hover { color: var(--status-danger); border-color: var(--status-danger); }
+.tm-card-remove[disabled] { display: none; }
+.tm-card-remove svg { width: 12px; height: 12px; }
+
+.tm-empty-lane {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: var(--space-2) 0;
+}
+
+.tm-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--border-default);
+  background: var(--surface-sunken);
+}
+.tm-footer-info {
+  flex: 1;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+.tm-btn {
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--duration-fast);
+}
+.tm-btn:hover { background: var(--surface-overlay); }
+.tm-btn-primary {
+  background: var(--agent-accent);
+  color: #fff;
+  border-color: var(--agent-accent);
+}
+.tm-btn-primary:hover { filter: brightness(1.05); background: var(--agent-accent); }
+.tm-btn-primary[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+/* Active-team badge in the chat header — shows when a session is approved */
+.active-team-badge {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  margin-left: var(--space-2);
+  padding: 3px 8px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--agent-accent);
+  background: var(--agent-accent-muted);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: filter var(--duration-fast);
+}
+.active-team-badge:hover { filter: brightness(1.1); }
+.active-team-badge.shown { display: inline-flex; }
+.active-team-badge .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--agent-accent);
+}
+
+/* ============================================
    PAGE-LEVEL — Higgins is an app shell within the site
    ============================================ */
 html, body { height: 100%; overflow: hidden; }
@@ -640,6 +845,36 @@ html, body { height: 100%; overflow: hidden; }
 }
 
 .message-meta .model-badge { color: var(--agent-accent); opacity: 0.7; }
+
+/* Per-message copy button — hover-revealed on assistant bubbles. Copies the
+   markdown source so paste targets keep formatting. */
+.message-meta .copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px; height: 22px;
+  margin-left: 4px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--duration-fast), color var(--duration-fast), background var(--duration-fast);
+}
+.message-meta .copy-btn svg { width: 12px; height: 12px; }
+.message.agent:hover .copy-btn,
+.message-meta .copy-btn:focus-visible {
+  opacity: 1;
+}
+.message-meta .copy-btn:hover {
+  color: var(--agent-accent);
+  background: var(--agent-accent-muted);
+}
+.message-meta .copy-btn.copied {
+  opacity: 1;
+  color: var(--status-success, #16a34a);
+}
 
 /* Speaking indicator on agent messages */
 .message.agent .message-bubble .speaking-icon {
@@ -1821,6 +2056,34 @@ html, body { height: 100%; overflow: hidden; }
   </div>
 </div>
 
+<!-- TEAM ASSEMBLY MODAL — REQ-004 Phase 3 -->
+<div class="team-modal-scrim" id="teamModalScrim" onclick="TeamModal.handleScrimClick(event)">
+  <div class="team-modal" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="teamModalTitle">
+    <div class="tm-header">
+      <div class="tm-header-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      </div>
+      <div class="tm-header-text">
+        <h2 id="teamModalTitle">Higgins is assembling a team</h2>
+        <div class="tm-task" id="teamModalTask">—</div>
+      </div>
+    </div>
+    <div class="tm-body" id="teamModalBody">
+      <!-- Populated by TeamModal.render() -->
+    </div>
+    <div class="tm-footer">
+      <div class="tm-footer-info" id="teamModalInfo">Review the team and approve to continue.</div>
+      <button class="tm-btn" id="teamModalCancelBtn" onclick="TeamModal.cancel()">Cancel</button>
+      <button class="tm-btn tm-btn-primary" id="teamModalApproveBtn" onclick="TeamModal.approve()">Approve</button>
+    </div>
+  </div>
+</div>
+
 <!-- FLOATING HIGGINS CARD -->
 <div class="higgins-card" id="higginsCard">
   <div class="resize-handle right" id="resizeRight"></div>
@@ -1846,8 +2109,14 @@ html, body { height: 100%; overflow: hidden; }
     <div class="higgins-identity">
       <div class="higgins-name">Higgins</div>
       <div class="higgins-status-text" id="statusText">Ready to help</div>
+      <span class="active-team-badge" id="activeTeamBadge" title="Active team"
+            onclick="(typeof reopenActiveTeamModal === 'function') && reopenActiveTeamModal()">
+        <span class="dot"></span>
+        <span class="active-team-label">team active</span>
+      </span>
     </div>
     <div class="card-header-actions">
+      <button class="icon-btn" onclick="startNewConversation()" title="New conversation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="12" y1="8" x2="12" y2="14"/><line x1="9" y1="11" x2="15" y2="11"/></svg></button>
       <button class="icon-btn" onclick="openMemoryInspector()" title="Memories"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c2.4 0 4.58.94 6.2 2.47"/><polyline points="22 4 12 14.01 9 11.01"/></svg></button>
       <button class="icon-btn" onclick="openPalette()" title="Navigate (Cmd+K)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/></svg></button>
       <button class="icon-btn" onclick="toggleMode()" title="Minimize"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button>
@@ -2106,6 +2375,7 @@ function startNewConversation() {
   localStorage.removeItem(HIGGINS_CONV_KEY);
   clearOpenArtifacts();
   clearChatStream();
+  hideActiveTeamBadge();
   setAgentState('ready', 'Ready to help');
   showToast('New conversation');
 }
@@ -2116,7 +2386,9 @@ async function switchConversation(id) {
   localStorage.setItem(HIGGINS_CONV_KEY, id);
   clearOpenArtifacts();
   clearChatStream();
+  hideActiveTeamBadge();
   await loadConversationHistory();
+  await restoreActiveTeamForConversation(id);
   setAgentState('ready', 'Ready to help');
 }
 
@@ -2205,15 +2477,238 @@ document.addEventListener('click', (e) => {
   populateMemoryInspector();
 });
 
-// Esc closes the inspector
+// Esc closes the inspector (also team modal — see TeamModal section below)
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     const scrim = document.getElementById('memoryInspectorScrim');
     if (scrim && scrim.classList.contains('open')) {
       scrim.classList.remove('open');
     }
+    const teamScrim = document.getElementById('teamModalScrim');
+    if (teamScrim && teamScrim.classList.contains('open') && !TeamModal.isWorking()) {
+      TeamModal.cancel();
+    }
   }
 });
+
+// ============================================
+// TEAM ASSEMBLY MODAL — REQ-004 Phase 3
+// Center-screen modal driven by the `assemble_team` tool's output.
+// State (proposal + edits) lives in memory; only the approve flow
+// hits the network. Cancel hits DELETE so the proposal row doesn't
+// linger as a stale NULL-approved_at record.
+// ============================================
+const TeamModal = (() => {
+  const LANES = [
+    { key: 'orchestrators',    label: 'Department Orchestrators', minCount: 1 },
+    { key: 'cross_functional', label: 'Cross-functional helpers', minCount: 0 },
+    { key: 'exec_team',        label: 'Exec team',                minCount: 0 },
+  ];
+  let state = null;       // { sessionId, taskSummary, roster, originalRoster, conversationId }
+  let working = false;    // request in flight — block re-entrancy
+
+  function open(payload) {
+    if (!payload || !payload.session_id || !payload.roster) {
+      console.warn('[TeamModal] open called without session_id/roster', payload);
+      return;
+    }
+    state = {
+      sessionId: payload.session_id,
+      taskSummary: payload.task_summary || '',
+      // Deep clone — the modal may mutate the lanes via Remove
+      roster: deepCloneRoster(payload.roster),
+      originalRoster: deepCloneRoster(payload.roster),
+      conversationId: localStorage.getItem(HIGGINS_CONV_KEY) || null,
+    };
+    document.getElementById('teamModalTask').textContent = state.taskSummary || '(no task summary)';
+    document.getElementById('teamModalInfo').textContent = 'Review the team and approve to continue.';
+    document.getElementById('teamModalApproveBtn').disabled = false;
+    render();
+    document.getElementById('teamModalScrim').classList.add('open');
+  }
+
+  function close() {
+    document.getElementById('teamModalScrim').classList.remove('open');
+    state = null;
+    working = false;
+  }
+
+  function deepCloneRoster(r) {
+    return {
+      orchestrators:    (r.orchestrators ?? []).map((e) => ({ ...e })),
+      cross_functional: (r.cross_functional ?? []).map((e) => ({ ...e })),
+      exec_team:        (r.exec_team ?? []).map((e) => ({ ...e })),
+    };
+  }
+
+  function render() {
+    if (!state) return;
+    const body = document.getElementById('teamModalBody');
+    body.innerHTML = LANES.map((lane) => {
+      const entries = state.roster[lane.key] || [];
+      const cards = entries.length
+        ? `<div class="tm-cards">${entries.map((e) => renderCard(lane.key, e, entries.length, lane.minCount)).join('')}</div>`
+        : `<div class="tm-empty-lane">— none —</div>`;
+      const count = entries.length ? `<span class="tm-count">${entries.length}</span>` : '';
+      return `<div class="tm-section">
+        <div class="tm-section-label">${lane.label}${count}</div>
+        ${cards}
+      </div>`;
+    }).join('');
+    // Update approve enable/disable based on min orchestrator rule
+    const okay = state.roster.orchestrators.length >= 1;
+    document.getElementById('teamModalApproveBtn').disabled = !okay;
+  }
+
+  function renderCard(laneKey, entry, laneSize, laneMin) {
+    const removable = laneSize > laneMin;
+    const avatarUrl = '/api/avatar?slug=' + encodeURIComponent(entry.slug) + '&size=80';
+    const character = entry.display_name || '(no character)';
+    const tagline = entry.tagline || '';  // not always present in tool output; safe-default empty
+    return `<div class="tm-card" data-slug="${escAttr(entry.slug)}" data-lane="${escAttr(laneKey)}">
+      <button class="tm-card-remove" ${removable ? '' : 'disabled'}
+              onclick="TeamModal.removeAgent('${escAttr(laneKey)}', '${escAttr(entry.slug)}')"
+              title="Remove ${escAttr(character)} from the team" aria-label="Remove ${escAttr(character)}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <img src="${avatarUrl}" alt="${escAttr(character)} avatar" />
+      <div class="tm-card-character">${escapeHtml(character)}</div>
+      <div class="tm-card-slug">${escapeHtml(entry.slug)}</div>
+      ${tagline ? `<div class="tm-card-tagline">${escapeHtml(tagline)}</div>` : ''}
+    </div>`;
+  }
+
+  function escAttr(s) {
+    return String(s ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function removeAgent(laneKey, slug) {
+    if (!state || working) return;
+    const lane = state.roster[laneKey];
+    if (!Array.isArray(lane)) return;
+    const idx = lane.findIndex((e) => e.slug === slug);
+    if (idx === -1) return;
+    // Guard the orchestrator floor (1) defensively even though renderCard
+    // hides the button — keyboard activation could still reach this path.
+    const laneMin = LANES.find((l) => l.key === laneKey)?.minCount ?? 0;
+    if (lane.length <= laneMin) return;
+    lane.splice(idx, 1);
+    render();
+  }
+
+  function rosterChanged() {
+    if (!state) return false;
+    return JSON.stringify(state.roster) !== JSON.stringify(state.originalRoster);
+  }
+
+  async function approve() {
+    if (!state || working) return;
+    working = true;
+    document.getElementById('teamModalApproveBtn').disabled = true;
+    document.getElementById('teamModalCancelBtn').disabled = true;
+    document.getElementById('teamModalInfo').textContent = 'Saving…';
+    try {
+      // PATCH first if the user edited the roster, then POST approve.
+      if (rosterChanged()) {
+        const patchRes = await fetch('/api/team-sessions', {
+          method: 'PATCH',
+          headers: authHeaders(),
+          body: JSON.stringify({ id: state.sessionId, roster: state.roster }),
+        });
+        if (!patchRes.ok) throw new Error('PATCH ' + patchRes.status);
+      }
+      const res = await fetch('/api/team-sessions', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ id: state.sessionId, action: 'approve' }),
+      });
+      if (!res.ok) throw new Error('approve HTTP ' + res.status);
+      showActiveTeamBadge(state.roster);
+      showToast('Team approved');
+      close();
+    } catch (err) {
+      console.error('[TeamModal] approve failed', err);
+      document.getElementById('teamModalInfo').textContent = 'Approve failed — see console.';
+      document.getElementById('teamModalApproveBtn').disabled = false;
+      document.getElementById('teamModalCancelBtn').disabled = false;
+      working = false;
+    }
+  }
+
+  async function cancel() {
+    if (!state || working) { close(); return; }
+    working = true;
+    document.getElementById('teamModalCancelBtn').disabled = true;
+    try {
+      const res = await fetch('/api/team-sessions?id=' + encodeURIComponent(state.sessionId), {
+        method: 'DELETE',
+        headers: authHeaders(),
+      });
+      // 404 means it was already gone — treat as success
+      if (!res.ok && res.status !== 404) {
+        console.warn('[TeamModal] cancel returned HTTP ' + res.status);
+      }
+      showToast('Team dismissed');
+    } catch (err) {
+      console.warn('[TeamModal] cancel network error', err);
+    }
+    close();
+  }
+
+  function handleScrimClick(e) {
+    // Click on the backdrop (not the modal itself) cancels. Block during in-flight requests.
+    if (e && e.target && e.target.id === 'teamModalScrim' && !working) {
+      cancel();
+    }
+  }
+
+  function isWorking() { return working; }
+
+  return { open, close, approve, cancel, removeAgent, handleScrimClick, isWorking };
+})();
+window.TeamModal = TeamModal;
+
+// ============================================
+// ACTIVE TEAM BADGE — shows in the Higgins card header when a session
+// is approved on the current conversation. Click to re-open the modal
+// in read-only-ish view (Phase 4 will surface a richer "edit team" UX).
+// ============================================
+function showActiveTeamBadge(roster) {
+  const badge = document.getElementById('activeTeamBadge');
+  if (!badge || !roster) return;
+  const total = (roster.orchestrators?.length || 0) +
+                (roster.cross_functional?.length || 0) +
+                (roster.exec_team?.length || 0);
+  if (total === 0) { badge.classList.remove('shown'); return; }
+  const orchestrators = (roster.orchestrators || []).map((e) => e.display_name || e.slug).join(', ');
+  badge.querySelector('.active-team-label').textContent =
+    total + ' agent' + (total === 1 ? '' : 's') + ' active';
+  badge.title = orchestrators ? 'Active team: ' + orchestrators : 'Team active';
+  badge.classList.add('shown');
+}
+function hideActiveTeamBadge() {
+  const badge = document.getElementById('activeTeamBadge');
+  if (badge) badge.classList.remove('shown');
+}
+
+async function restoreActiveTeamForConversation(conversationId) {
+  if (!conversationId) { hideActiveTeamBadge(); return; }
+  try {
+    const res = await fetch('/api/team-sessions?conversationId=' + encodeURIComponent(conversationId), {
+      headers: authHeaders(),
+    });
+    if (!res.ok) { hideActiveTeamBadge(); return; }
+    const data = await res.json();
+    if (data?.session?.roster) {
+      showActiveTeamBadge(data.session.roster);
+    } else {
+      hideActiveTeamBadge();
+    }
+  } catch (err) {
+    console.warn('[higgins] restoreActiveTeam failed', err);
+    hideActiveTeamBadge();
+  }
+}
 function closePalette() { document.getElementById('paletteScrim').classList.remove('open'); document.getElementById('commandPalette').classList.remove('open'); document.getElementById('paletteSearch').value = ''; filterPalette(''); }
 function filterPalette(q) { q = q.toLowerCase().trim(); document.querySelectorAll('.module-tile').forEach(t => t.style.display = (!q||t.dataset.name?.includes(q))?'':'none'); document.querySelectorAll('.recent-item,.suggestion-card').forEach(el => el.style.display = (!q||el.textContent.toLowerCase().includes(q))?'':'none'); }
 
@@ -2354,6 +2849,8 @@ async function sendMessage() {
         advanceFromThinking();
         accumulated += part.delta;
         agentBubble.innerHTML = textToHtml(accumulated);
+        // Stash the markdown source so the per-message copy button has it.
+        agentMsg.dataset.source = accumulated;
         const stream = document.getElementById('conversationStream');
         stream.scrollTop = stream.scrollHeight;
       } else if (t === 'tool-input-start' && part.toolName) {
@@ -2376,11 +2873,23 @@ async function sendMessage() {
         } catch (toolErr) {
           console.error('[higgins] artifact tool dispatch failed', toolErr, part);
         }
-      } else if (t === 'tool-output-available' && part.output && window.ArtifactWindow) {
-        // Server-side render result lands here — blob_url for docx/pptx,
-        // status:'error' for renderer failures. Reconcile the open window.
+      } else if (t === 'tool-output-available' && part.output) {
+        advanceFromThinking();
         const out = part.output;
-        if (out.id) {
+        // Tool output events don't carry toolName — only toolCallId + output.
+        // Discriminate by the output's shape: assemble_team returns
+        // { status:'proposed', session_id, roster, ... }; artifact tools
+        // return { id, blobUrl?, status?, error? } keyed on the artifact id.
+        const isTeamProposal = out.status === 'proposed' && out.session_id && out.roster;
+        const isTeamError = out.status === 'error' && (out.session_id || out.unknown_slugs);
+        if (isTeamProposal) {
+          try { window.TeamModal.open(out); }
+          catch (mErr) { console.error('[higgins] TeamModal.open failed', mErr); }
+        } else if (isTeamError) {
+          showToast('Team assembly failed: ' + (out.error || 'unknown'));
+        } else if (window.ArtifactWindow && out.id) {
+          // Artifact server-side render result — blob_url for docx/pptx,
+          // status:'error' for renderer failures. Reconcile the open window.
           const win = window.ArtifactWindow.get(out.id);
           if (win) {
             if (out.blobUrl) {
@@ -2452,7 +2961,7 @@ async function loadConversationHistory() {
       const parts = Array.isArray(m.parts) ? m.parts : [];
       const text = parts.filter(p => p && p.type === 'text').map(p => p.text || '').join('');
       if (!text) continue;
-      addMessage(m.role === 'assistant' ? 'agent' : 'user', textToHtml(text));
+      addMessage(m.role === 'assistant' ? 'agent' : 'user', textToHtml(text), text);
     }
 
     // Rehydrate artifact windows from prior tool calls
@@ -2460,23 +2969,53 @@ async function loadConversationHistory() {
     if (artifacts.length && window.ArtifactWindow) {
       window.ArtifactWindow.rehydrate(artifacts);
     }
+
+    // Restore the active team badge (REQ-004 Phase 3). Best-effort; doesn't
+    // block history rendering if the lookup is slow or fails.
+    restoreActiveTeamForConversation(id);
   } catch (err) {
     console.warn('[higgins] history load failed', err);
   }
 }
 window.addEventListener('DOMContentLoaded', loadConversationHistory);
 
-function addMessage(role, html) {
+function addMessage(role, html, sourceText) {
   const stream = document.getElementById('conversationStream');
   const msg = document.createElement('div');
   msg.className = `message ${role}`;
+  if (typeof sourceText === 'string') msg.dataset.source = sourceText;
   const time = new Date().toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+  // Assistant messages get a hover-revealed copy button in the meta row.
+  // The copy reads the markdown source stashed in data-source so pastes
+  // into Notion / Slack / docs keep formatting.
   msg.innerHTML = role === 'agent'
-    ? `<div class="message-bubble">${html}</div><div class="message-meta">${time} <span class="model-badge">Claude Opus 4.7</span></div>`
+    ? `<div class="message-bubble">${html}</div><div class="message-meta">${time} <span class="model-badge">Claude Opus 4.7</span>
+        <button class="copy-btn" onclick="copyMessageSource(this)" title="Copy markdown" aria-label="Copy message">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button></div>`
     : `<div class="message-bubble">${html}</div><div class="message-meta">${time}</div>`;
   stream.appendChild(msg);
   stream.scrollTop = stream.scrollHeight;
   return msg;
+}
+
+async function copyMessageSource(btn) {
+  const msg = btn.closest('.message');
+  if (!msg) return;
+  // Prefer the stashed markdown source; fall back to the rendered bubble text
+  // (covers any pre-streamed message that didn't get data-source populated).
+  const text = msg.dataset.source ??
+               (msg.querySelector('.message-bubble')?.innerText || '');
+  if (!text) { showToast('Nothing to copy'); return; }
+  try {
+    await navigator.clipboard.writeText(text);
+    btn.classList.add('copied');
+    showToast('Copied');
+    setTimeout(() => btn.classList.remove('copied'), 1200);
+  } catch (err) {
+    console.warn('[higgins] copy failed', err);
+    showToast('Copy blocked by browser');
+  }
 }
 
 // Per-tool labels for the loading indicator
@@ -2487,6 +3026,7 @@ const TOOL_LABELS = {
   recall_memory: 'Searching memory…',
   forget_memory: 'Removing from memory…',
   summarize_conversation: 'Summarizing the conversation…',
+  assemble_team: 'Assembling the team…',
 };
 
 function addThinkingIndicator(initialText) {
