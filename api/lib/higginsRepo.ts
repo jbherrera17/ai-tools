@@ -528,3 +528,49 @@ export async function replaceTeamRoster(
   if (error) throw error;
   return data as TeamSession;
 }
+
+// ============================================
+// Skill content fetch — REQ-004 Phase 4
+// Used by the dept-orchestrator runner to load SKILL.md bodies + leaf
+// directories from the DB mirror. See docs/skills-sync.md for why the
+// content lives in skill_registry.content rather than on disk.
+// ============================================
+
+export interface SkillRow {
+  slug: string;
+  display_name: string | null;
+  tagline: string | null;
+  tier: string | null;
+  department: string | null;
+  content: string | null;
+}
+
+export async function getSkillBySlug(slug: string): Promise<SkillRow | null> {
+  const sb = getServiceClient();
+  const { data, error } = await sb
+    .from('skill_registry')
+    .select('slug, display_name, tagline, tier, department, content')
+    .eq('slug', slug)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as SkillRow) ?? null;
+}
+
+/**
+ * Leaf specialists under a department orchestrator. Filters to the dept
+ * prefix + tier='specialist' so the dept-orchestrator runner can inject
+ * a leaf directory as context per REQ-004 §9 (Option C, locked).
+ *
+ * `dept` is the prefix slug (e.g. 'mkt', 'fin'), NOT the orchestrator slug.
+ */
+export async function getLeafSkillsForDept(dept: string): Promise<SkillRow[]> {
+  const sb = getServiceClient();
+  const { data, error } = await sb
+    .from('skill_registry')
+    .select('slug, display_name, tagline, tier, department, content')
+    .eq('department', dept)
+    .eq('tier', 'specialist')
+    .order('slug');
+  if (error) throw error;
+  return (data ?? []) as SkillRow[];
+}

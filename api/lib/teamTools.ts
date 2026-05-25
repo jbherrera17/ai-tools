@@ -1,7 +1,13 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { createTeamSession, type RosterEntry, type TeamRoster } from './higginsRepo.js';
+import {
+  createTeamSession,
+  getActiveTeamSession,
+  type RosterEntry,
+  type TeamRoster,
+} from './higginsRepo.js';
 import { loadCatalog, type CatalogEntry, type SkillCatalog } from './skillCatalog.js';
+import { runDeptOrchestrator, type DeptResult } from './deptOrchestrator.js';
 
 /**
  * Team-assembly tool — REQ-004 Phase 2.
@@ -83,8 +89,125 @@ function resolveAgainstPool(
   return { resolved, unknown };
 }
 
+// ───────────────────────────────────────────────────────────────────────
+// run_team_workstreams — REQ-004 Phase 4 hierarchical fan-out
+// ───────────────────────────────────────────────────────────────────────
+
+const runTeamWorkstreamsInput = z.object({
+  task_brief: z
+    .string()
+    .min(20)
+    .max(12000)
+    .describe(
+      "A concrete brief for the team: what they're working on, JB's constraints, what good looks like, any decisions JB has already locked. Will be sent to each department orchestrator. Include the relevant context from the conversation — they don't have your chat history. Be substantive; trim only obvious chat banter.",
+    ),
+});
+
 export function makeTeamTools(conversationId: string) {
   return {
+    run_team_workstreams: tool({
+      description: [
+        'Fan out the active approved team in parallel: each department orchestrator runs as its own LLM call against the same task brief, drawing on its leaf specialists for context.',
+        'Call this when the active team has been approved and JB has handed you substantive work the team should execute on (a strategy, a recommendation, a multi-domain decision).',
+        'Returns each orchestrator\'s structured response (body + consulted leaf characters). Use the returned bundle to synthesize the user-facing reply — quote characters by name, weave findings, surface trade-offs, end with the open questions JB needs to decide.',
+        'Do NOT call this on a turn where there\'s no approved team — assemble first. Do NOT call this for a clarifying question or chat banter — answer inline.',
+      ].join(' '),
+      inputSchema: runTeamWorkstreamsInput,
+      execute: async ({ task_brief }, { abortSignal }) => {
+        try {
+          const session = await getActiveTeamSession(conversationId);
+          if (!session) {
+            return {
+              status: 'no_active_team',
+              message: 'No approved team for this conversation. Assemble a team first.',
+            };
+          }
+          const roster: TeamRoster = session.roster;
+          if (!roster.orchestrators || roster.orchestrators.length === 0) {
+            return {
+              status: 'empty_roster',
+              message: 'Active team has no department orchestrators to fan out to.',
+            };
+          }
+
+          const catalog: SkillCatalog = await loadCatalog();
+          const crossFunctional = (roster.cross_functional ?? []).map((c) => {
+            const hit = catalog.crossFunctional.find((e) => e.slug === c.slug);
+            return {
+              slug: c.slug,
+              character: c.display_name ?? hit?.displayName ?? null,
+              tagline: hit?.tagline ?? null,
+            };
+          });
+
+          // Parallel fan-out. Wrap individual failures so a single dept's
+          // error doesn't abort the whole bundle — Higgins gets a noted gap.
+          const results = await Promise.all(
+            roster.orchestrators.map(async (o) => {
+              try {
+                const result = await runDeptOrchestrator({
+                  deptSlug: o.slug,
+                  taskBrief: task_brief,
+                  crossFunctional,
+                  abortSignal,
+                });
+                return { kind: 'ok' as const, result };
+              } catch (err) {
+                // Never pass the raw err to console.error — AI SDK error
+                // objects sometimes have exotic property descriptors that
+                // crash Node's util.inspect. Extract scalars first.
+                const e = err as { message?: string; name?: string; cause?: { message?: string }; stack?: string };
+                const msg = e?.message ?? String(err);
+                const name = e?.name ?? 'Error';
+                const causeMsg = e?.cause?.message;
+                console.error(
+                  `[higgins/run_team_workstreams] dept ${o.slug} failed: ${name}: ${msg}` +
+                  (causeMsg ? ` (cause: ${causeMsg})` : ''),
+                );
+                if (e?.stack) console.error(e.stack.split('\n').slice(0, 5).join('\n'));
+                return {
+                  kind: 'error' as const,
+                  slug: o.slug,
+                  character: o.display_name ?? null,
+                  error: msg,
+                };
+              }
+            }),
+          );
+
+          const dept_responses = results
+            .filter((r): r is { kind: 'ok'; result: DeptResult } => r.kind === 'ok')
+            .map((r) => r.result);
+          const dept_errors = results
+            .filter((r): r is { kind: 'error'; slug: string; character: string | null; error: string } => r.kind === 'error')
+            .map((r) => ({ slug: r.slug, character: r.character, error: r.error }));
+
+          return {
+            status: 'fan_out_complete',
+            session_id: session.id,
+            task_brief,
+            dept_responses,
+            dept_errors: dept_errors.length ? dept_errors : undefined,
+            cross_functional_context: crossFunctional.map((c) => ({
+              slug: c.slug,
+              character: c.character,
+              tagline: c.tagline,
+            })),
+            exec_team_context: (roster.exec_team ?? []).map((e) => ({
+              slug: e.slug,
+              character: e.display_name ?? null,
+            })),
+          };
+        } catch (err) {
+          const e = err as { message?: string; name?: string; stack?: string };
+          const msg = e?.message ?? String(err);
+          console.error(`[higgins/run_team_workstreams] fan-out failed: ${e?.name ?? 'Error'}: ${msg}`);
+          if (e?.stack) console.error(e.stack.split('\n').slice(0, 5).join('\n'));
+          return { status: 'error', error: msg };
+        }
+      },
+    }),
+
     assemble_team: tool({
       description: [
         'Opens the team-assembly modal in the chat surface so JB can approve a proposed agent roster.',

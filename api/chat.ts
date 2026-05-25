@@ -7,6 +7,7 @@ import {
   listMessages,
   appendMessage,
   recallMemories,
+  getActiveTeamSession,
   type RecalledMemory,
 } from './lib/higginsRepo.js';
 import { requireOwner } from './lib/auth.js';
@@ -35,7 +36,7 @@ import { embedText } from './lib/embeddings.js';
  * Vercel-linked projects).
  */
 
-export const config = { maxDuration: 60 };
+export const config = { maxDuration: 180 };
 
 interface ChatBody {
   conversationId?: string;
@@ -129,6 +130,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const modelMessages = await convertToModelMessages(uiMessages);
   const systemPrompt = await buildHigginsSystemPrompt({ conversationId });
+
+  // REQ-004 Phase 3 — Strict toolChoice forcing.
+  //
+  // Opus 4.7 occasionally drifts into preamble-chat after team approval
+  // ("Building it now…", apology + read-back, no tool call) despite the
+  // system prompt's "No preamble" rule. The auto-continuation phrase from
+  // the approve flow is a deterministic signal: when that exact pattern
+  // arrives AND an active team exists for the conversation, force the
+  // model to fire `run_team_workstreams` on this turn. After the tool
+  // returns, subsequent steps run unconstrained so synthesis +
+  // create_artifact can proceed.
+  //
+  // Strict heuristic: match only the auto-continuation phrase. JB typing
+  // his own continuation falls through to `auto`.
+  const AUTO_CONTINUATION_PATTERN = /^Team approved\. Run the workstreams now/;
+  let toolChoice: 'auto' | { type: 'tool'; toolName: 'run_team_workstreams' } = 'auto';
+  if (AUTO_CONTINUATION_PATTERN.test(incoming)) {
+    const activeTeam = await getActiveTeamSession(conversationId).catch((err) => {
+      console.warn('[higgins/chat] active team lookup for toolChoice failed', (err as Error).message);
+      return null;
+    });
+    if (activeTeam) {
+      toolChoice = { type: 'tool', toolName: 'run_team_workstreams' };
+      console.log('[higgins/chat] toolChoice forced to run_team_workstreams', {
+        sessionId: activeTeam.id,
+      });
+    }
+  }
+
   const result = streamText({
     model: 'anthropic/claude-opus-4-7',
     system: systemPrompt + memoryBlock,
@@ -138,6 +168,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ...makeMemoryTools(conversationId),
       ...makeTeamTools(conversationId),
     },
+    toolChoice,
     stopWhen: stepCountIs(8),  // bound tool loops
     onFinish: async ({ text }) => {
       console.log('[higgins/chat] onFinish', { textLen: text?.length ?? 0 });
@@ -152,7 +183,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     },
     onError: ({ error }) => {
-      console.error('[higgins/chat] stream error', error);
+      // Never pass the raw `error` to console.error. AI SDK error objects
+      // sometimes carry exotic property descriptors that crash Node's
+      // util.inspect — and Node crashing here takes down the dev process,
+      // not just the request. Extract scalars.
+      const e = error as { name?: string; message?: string; cause?: { message?: string } };
+      const name = e?.name ?? 'Error';
+      const msg = e?.message ?? String(error);
+      const causeMsg = e?.cause?.message;
+      console.error(
+        `[higgins/chat] stream error: ${name}: ${msg}` +
+        (causeMsg ? ` (cause: ${causeMsg})` : ''),
+      );
     },
   });
 
@@ -161,8 +203,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   result.pipeUIMessageStreamToResponse(res, {
     onError: (error) => {
-      const msg = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
-      console.error('[higgins/chat] pipeUIMessageStream onError', msg, error);
+      const e = error as { name?: string; message?: string };
+      const msg = e?.message ?? String(error);
+      console.error(`[higgins/chat] pipeUIMessageStream onError: ${e?.name ?? 'Error'}: ${msg}`);
       return msg;
     },
   });
