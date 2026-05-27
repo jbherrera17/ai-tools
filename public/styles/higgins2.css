@@ -560,6 +560,21 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+.tw-elapsed {
+  flex: 0 0 auto;
+  font-family: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: var(--agent-accent);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--surface-overlay);
+  border: 1px solid var(--border-subtle);
+  min-width: 64px;
+  text-align: center;
+}
 
 .tw-body {
   flex: 1;
@@ -621,6 +636,19 @@
   font-size: 0.62rem;
   color: var(--text-muted);
   word-break: break-all;
+}
+.tw-card-status {
+  font-size: 0.7rem;
+  font-style: italic;
+  color: var(--agent-accent);
+  margin-top: 2px;
+  min-height: 1em;
+  /* Soft fade between status changes so the text doesn't snap. */
+  animation: twStatusFade 0.45s ease-out;
+}
+@keyframes twStatusFade {
+  from { opacity: 0.25; transform: translateY(-1px); }
+  to   { opacity: 1;    transform: translateY(0); }
 }
 .tw-footer {
   display: flex;
