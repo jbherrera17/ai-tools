@@ -288,6 +288,14 @@
     <div class="tm-body" id="teamModalBody">
       <!-- Populated by TeamModal.render() -->
     </div>
+    <!-- Approval context + clarification — so JB can read what he's approving
+         and add instructions without leaving the modal. -->
+    <div class="tm-approval">
+      <div class="tm-approval-context" id="teamModalContext" hidden></div>
+      <label class="tm-clarify-label" for="teamModalClarify">Add clarifying instructions <span class="tm-clarify-opt">(optional)</span></label>
+      <textarea id="teamModalClarify" class="tm-clarify-input" rows="2"
+                placeholder="Anything to refine before the team starts — scope, priorities, constraints…"></textarea>
+    </div>
     <div class="tm-footer">
       <div class="tm-footer-info" id="teamModalInfo">Review the team and approve to continue.</div>
       <button class="tm-btn" id="teamModalCancelBtn" onclick="TeamModal.cancel()">Cancel</button>

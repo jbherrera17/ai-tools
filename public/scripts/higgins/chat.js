@@ -446,6 +446,11 @@ async function sendMessage(overrideText) {
   const agentBubble = agentMsg.querySelector('.message-bubble');
   let accumulated = '';
   let firstDelta = true;
+  // Defer the team-assembly modal until the stream finishes. The tool output
+  // arrives mid-stream (Higgins is still narrating the approval process), so
+  // opening immediately pops the modal over an unfinished message. Stash it
+  // here and open once all text deltas have rendered.
+  let pendingTeamProposal = null;
 
   try {
     const res = await fetch('/api/chat', {
@@ -520,8 +525,9 @@ async function sendMessage(overrideText) {
         const isFanOutComplete = out.status === 'fan_out_complete' || out.status === 'no_active_team' || out.status === 'empty_roster';
         const isTeamError = out.status === 'error' && (out.session_id || out.unknown_slugs || out.error);
         if (isTeamProposal) {
-          try { window.TeamModal.open(out); }
-          catch (mErr) { console.error('[higgins] TeamModal.open failed', mErr); }
+          // Defer: open after the stream completes so Higgins finishes
+          // explaining the approval process before the modal appears.
+          pendingTeamProposal = out;
         } else if (isFanOutComplete) {
           // Fan-out finished (success or no-team early return) — drop the overlay.
           try { window.TeamWorking?.close(); } catch (e) { /* noop */ }
@@ -558,6 +564,14 @@ async function sendMessage(overrideText) {
       thinking.remove();
       face.classList.remove('thinking');
       if (!accumulated) agentBubble.innerHTML = '<em style="opacity:0.6">(no response)</em>';
+    }
+
+    // Stream is done and Higgins' full message has rendered — now surface the
+    // team-assembly modal for approval, passing along his narration so the
+    // modal can show the approval context inline.
+    if (pendingTeamProposal) {
+      try { window.TeamModal.open(pendingTeamProposal, accumulated); }
+      catch (mErr) { console.error('[higgins] TeamModal.open failed', mErr); }
     }
   } catch (err) {
     try { thinking.remove(); } catch {}

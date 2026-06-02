@@ -468,6 +468,63 @@
 .tm-btn-primary:hover { filter: brightness(1.05); background: var(--agent-accent); }
 .tm-btn-primary[disabled] { opacity: 0.5; cursor: not-allowed; }
 
+/* Approval context + clarification — sits between the roster body and the
+   footer so JB can read what he's approving and refine it inline. */
+.tm-approval {
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--border-default);
+  background: var(--surface-sunken);
+}
+.tm-approval-context {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
+  background: var(--agent-accent-muted);
+  border-left: 3px solid var(--agent-accent);
+  border-radius: var(--radius-sm);
+  max-height: 9rem;
+  overflow-y: auto;
+}
+.tm-approval-context[hidden] { display: none; }
+.tm-clarify-label {
+  display: block;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: var(--space-2);
+}
+.tm-clarify-opt {
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+.tm-clarify-input {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--text-primary);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  resize: vertical;
+  min-height: 2.4rem;
+  transition: border-color var(--duration-fast);
+}
+.tm-clarify-input::placeholder { color: var(--text-muted); }
+.tm-clarify-input:focus {
+  outline: none;
+  border-color: var(--agent-accent);
+}
+
 /* ============================================
    TEAM WORKING OVERLAY — REQ-004 Phase 4
    Appears while run_team_workstreams is in flight. Same card vocabulary

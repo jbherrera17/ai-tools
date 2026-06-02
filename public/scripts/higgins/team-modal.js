@@ -15,7 +15,10 @@ const TeamModal = (() => {
   let state = null;       // { sessionId, taskSummary, roster, originalRoster, conversationId, availablePools, pickerOpen }
   let working = false;    // request in flight — block re-entrancy
 
-  function open(payload) {
+  // narration: Higgins' full streamed message for this turn (the approval
+  // walkthrough). Shown inline so JB never has to read the chat behind the
+  // modal to understand what he's approving.
+  function open(payload, narration) {
     if (!payload || !payload.session_id || !payload.roster) {
       console.warn('[TeamModal] open called without session_id/roster', payload);
       return;
@@ -33,6 +36,21 @@ const TeamModal = (() => {
     document.getElementById('teamModalTask').textContent = state.taskSummary || '(no task summary)';
     document.getElementById('teamModalInfo').textContent = 'Review the team and approve to continue.';
     document.getElementById('teamModalApproveBtn').disabled = false;
+    // Surface Higgins' approval narration inside the modal (option 3).
+    const ctx = document.getElementById('teamModalContext');
+    if (ctx) {
+      const text = (narration || '').trim();
+      if (text) {
+        ctx.innerHTML = textToHtml(text);
+        ctx.hidden = false;
+      } else {
+        ctx.innerHTML = '';
+        ctx.hidden = true;
+      }
+    }
+    // Fresh clarification field per proposal.
+    const clarify = document.getElementById('teamModalClarify');
+    if (clarify) clarify.value = '';
     render();
     document.getElementById('teamModalScrim').classList.add('open');
     // Fetch the full catalog so the "+ Add" pickers can show what wasn't
@@ -54,6 +72,10 @@ const TeamModal = (() => {
 
   function close() {
     document.getElementById('teamModalScrim').classList.remove('open');
+    const clarify = document.getElementById('teamModalClarify');
+    if (clarify) clarify.value = '';
+    const ctx = document.getElementById('teamModalContext');
+    if (ctx) { ctx.innerHTML = ''; ctx.hidden = true; }
     state = null;
     working = false;
   }
@@ -242,14 +264,20 @@ const TeamModal = (() => {
       showActiveTeamBadge(state.roster);
       showToast('Team approved');
       const taskSummary = state.taskSummary;
+      // Read the clarification before close() clears the field.
+      const clarify = (document.getElementById('teamModalClarify')?.value || '').trim();
       close();
       // Auto-continue: signal Higgins to proceed AND include the task brief
       // so he has zero ambiguity about what to send to the team. Without
       // the explicit brief, the model tends to narrate ("On it, sending
       // the brief now") and end the turn without firing the tool.
-      const continuationText = taskSummary && taskSummary.trim()
+      let continuationText = taskSummary && taskSummary.trim()
         ? `Team approved. Run the workstreams now. Brief:\n\n${taskSummary.trim()}`
         : 'Team approved. Run the workstreams now using the task we discussed above.';
+      // Fold in any clarifying instructions JB added in the modal.
+      if (clarify) {
+        continuationText += `\n\nAdditional instructions from JB:\n${clarify}`;
+      }
       try { sendMessage(continuationText); }
       catch (e) { console.warn('[TeamModal] auto-continue failed', e); }
     } catch (err) {
