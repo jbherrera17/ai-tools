@@ -708,15 +708,21 @@
   to   { opacity: 1;    transform: translateY(0); }
 }
 .tw-footer {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
   border-top: 1px solid var(--border-default);
   background: var(--surface-sunken);
   font-size: 0.78rem;
   color: var(--text-muted);
 }
+.tw-footer-working {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+/* An explicit `display` on these flex views overrides the UA [hidden] rule, so
+   re-assert display:none when hidden — otherwise both views render at once. */
+.tw-footer-working[hidden],
+.tw-footer-stalled[hidden] { display: none; }
 .tw-spinner {
   width: 14px; height: 14px;
   border: 2px solid var(--border-default);
@@ -725,6 +731,59 @@
   animation: twSpin 0.9s linear infinite;
 }
 @keyframes twSpin { to { transform: rotate(360deg); } }
+
+/* ── Stalled state ─────────────────────────────────────────────────────── */
+.tw-footer-stalled {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.tw-stalled-msg {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+.tw-stalled-msg svg {
+  flex: 0 0 auto;
+  width: 16px; height: 16px;
+  margin-top: 1px;
+  color: var(--color-warning, #ff9500);
+}
+.tw-stalled-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+.tw-btn {
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--duration-fast);
+}
+.tw-btn:hover { background: var(--surface-overlay); }
+.tw-btn-primary {
+  background: var(--agent-accent);
+  color: #fff;
+  border-color: var(--agent-accent);
+}
+.tw-btn-primary:hover { filter: brightness(1.05); }
+.tw-btn[disabled] { opacity: 0.6; cursor: not-allowed; }
+
+/* When stalled, halt the cosmetic card halo and warn-tint the frozen clock so
+   the overlay reads as "stopped", not "still working". */
+.team-working-scrim.stalled .tw-card { animation: none; }
+.tw-elapsed.stalled {
+  color: var(--color-warning, #ff9500);
+  border-color: var(--color-warning, #ff9500);
+}
 
 /* Active-team badge in the chat header — shows when a session is approved */
 .active-team-badge {

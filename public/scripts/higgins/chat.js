@@ -558,6 +558,17 @@ async function sendMessage(overrideText) {
       }
     }
 
+    // If the team-working overlay is STILL open here, the stream reached EOF
+    // without ever delivering the run_team_workstreams result — i.e. /api/chat
+    // was killed mid-fan-out (maxDuration) or the connection truncated. The
+    // `for await` loop ends cleanly in that case (no error part to catch), so
+    // this is the only place we can detect it. Flip the overlay to its stalled
+    // state (with Retry) instead of leaving a forever-spinning spinner.
+    if (window.TeamWorking?.isOpen?.()) {
+      window.TeamWorking.markStalled();
+      showToast('Team run stalled — you can retry it');
+    }
+
     if (firstDelta) {
       // Stream ended with no text — treat as empty (could happen if response
       // was purely tool calls with no narrative).
@@ -577,13 +588,19 @@ async function sendMessage(overrideText) {
     try { thinking.remove(); } catch {}
     face.classList.remove('thinking');
     face.classList.remove('speaking');
-    // Make sure the working overlay doesn't get stranded if the stream
-    // failed or JB hit Stop mid-fan-out.
-    try { window.TeamWorking?.close(); } catch {}
     if (err && err.name === 'AbortError') {
+      // JB hit Stop — tear the overlay down cleanly, this was intentional.
+      try { window.TeamWorking?.close(); } catch {}
       agentBubble.innerHTML = '<em style="opacity:0.6">(stopped)</em>';
     } else {
+      // A real stream/network error. If a team fan-out was in flight, keep the
+      // overlay up but flip it to the stalled state so JB can relaunch it with
+      // one click instead of losing the assembled team. Otherwise nothing to
+      // tear down.
       console.error('[higgins] send failed', err);
+      try {
+        if (window.TeamWorking?.isOpen?.()) window.TeamWorking.markStalled();
+      } catch {}
       agentBubble.innerHTML = '<em style="color:var(--status-danger)">Something went wrong: ' + escapeHtml(err.message || String(err)) + '</em>';
       showToast('Chat error — see console');
     }

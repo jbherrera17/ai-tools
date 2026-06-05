@@ -37,7 +37,15 @@ import { embedText } from './lib/embeddings.js';
  * Vercel-linked projects).
  */
 
-export const config = { maxDuration: 180 };
+// 300s = the platform max. A team turn = parallel dept fan-out (each dept
+// call capped at 120s in deptOrchestrator) PLUS Opus synthesis of the bundle.
+// At the old 180s ceiling a 120s fan-out left almost no room for synthesis on
+// a heavy brief, so the function was killed mid-stream — the stream truncated
+// at EOF with no error, stranding the client's "Team Working" overlay forever.
+// 300s gives synthesis ~180s of headroom. The client also now detects a
+// truncated stream and offers a retry, so this is defense-in-depth, not the
+// sole guard.
+export const config = { maxDuration: 300 };
 
 interface ChatBody {
   conversationId?: string;

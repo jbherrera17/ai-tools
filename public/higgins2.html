@@ -324,8 +324,26 @@
       <!-- Populated by TeamWorking.open() -->
     </div>
     <div class="tw-footer">
-      <div class="tw-spinner" aria-hidden="true"></div>
-      <span>Working in parallel — typically 1–3 minutes. Higgins will synthesize when the team reports back.</span>
+      <!-- Working view — the normal in-flight state. -->
+      <div class="tw-footer-working" id="teamWorkingWorking">
+        <div class="tw-spinner" aria-hidden="true"></div>
+        <span>Working in parallel — typically 1–3 minutes. Higgins will synthesize when the team reports back.</span>
+      </div>
+      <!-- Stalled view — shown when the run times out or the stream truncates.
+           Gives JB a clear signal it hung plus a one-click relaunch. -->
+      <div class="tw-footer-stalled" id="teamWorkingStalled" hidden>
+        <div class="tw-stalled-msg">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span>This run didn’t report back — it likely timed out. Your team is still assembled, so you can relaunch it with the same brief.</span>
+        </div>
+        <div class="tw-stalled-actions">
+          <button class="tw-btn" id="teamWorkingDismissBtn" onclick="TeamWorking.dismiss()">Dismiss</button>
+          <button class="tw-btn tw-btn-primary" id="teamWorkingRetryBtn" onclick="TeamWorking.retry()">Retry team run</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
