@@ -19,6 +19,7 @@
     { "source": "/admin", "destination": "/admin.html" },
     { "source": "/skills", "destination": "/skills.html" },
     { "source": "/ai-stack", "destination": "/ai-stack.html" },
+    { "source": "/claude-models", "destination": "/claude-models.html" },
     { "source": "/higgins2", "destination": "/higgins2.html" },
     { "source": "/ca-bill-tracker", "destination": "/ca-bill-tracker.html" },
     { "source": "/", "destination": "/index.html" }
