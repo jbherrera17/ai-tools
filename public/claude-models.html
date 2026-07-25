@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Model Guide — AI.JBHerrera</title>
+    <meta name="description" content="Which Claude model to use for which job — a routing card and decision tree for Fable 5, Opus 5, Sonnet 5, and Haiku 4.5."/>
+
+    <!-- Theme: set before paint to avoid light-flash for dark users -->
+    <script>
+      (function(){
+        var s = localStorage.getItem('theme');
+        var d = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', s || d);
+      })();
+    </script>
+
+    <link rel="stylesheet" href="/styles/base.css"/>
+
+    <style>
+        /* Page-specific styles only. Use var(--color-*) tokens — no hex literals. */
+
+        .page-models .models-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: var(--space-5);
+        }
+
+        .page-models .model-card { position: relative; overflow: hidden; }
+
+        .page-models .model-card::before {
+            content: "";
+            position: absolute;
+            inset: 0 auto 0 0;
+            width: 3px;
+            background: var(--accent, var(--color-primary));
+        }
+
+        .page-models .model-card.is-fable  { --accent: var(--color-secondary); }
+        .page-models .model-card.is-opus   { --accent: var(--color-primary); }
+        .page-models .model-card.is-sonnet { --accent: var(--color-info); }
+        .page-models .model-card.is-haiku  { --accent: var(--color-success); }
+
+        .page-models .model-name { margin: 0 0 var(--space-2); }
+        .page-models .model-role { color: var(--color-text-secondary); margin: 0 0 var(--space-4); }
+
+        .page-models .spec-list {
+            list-style: none;
+            margin: 0 0 var(--space-4);
+            padding: var(--space-4) 0;
+            border-top: 1px solid var(--color-border-subtle);
+            border-bottom: 1px solid var(--color-border-subtle);
+        }
+
+        .page-models .spec-list li {
+            display: flex;
+            justify-content: space-between;
+            gap: var(--space-3);
+            padding: var(--space-1) 0;
+        }
+
+        .page-models .spec-key { color: var(--color-text-tertiary); }
+        .page-models .spec-val { color: var(--color-text); text-align: right; }
+
+        .page-models .use-list { margin: 0; padding-left: var(--space-4); color: var(--color-text-secondary); }
+        .page-models .use-list li { padding: var(--space-1) 0; }
+
+        /* Decision rail — the branching flow */
+        .page-models .rail { position: relative; padding-left: var(--space-6); }
+
+        .page-models .rail::before {
+            content: "";
+            position: absolute;
+            left: 7px;
+            top: var(--space-2);
+            bottom: var(--space-8);
+            width: 2px;
+            background: var(--color-border);
+        }
+
+        .page-models .rail-step { position: relative; margin-bottom: var(--space-6); }
+
+        .page-models .rail-step::before {
+            content: "";
+            position: absolute;
+            left: calc(var(--space-6) * -1);
+            top: 6px;
+            width: 16px;
+            height: 16px;
+            border-radius: var(--radius-full);
+            background: var(--color-surface);
+            border: 2px solid var(--color-primary);
+        }
+
+        .page-models .rail-q { margin: 0 0 var(--space-3); }
+
+        .page-models .branch {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: var(--space-2);
+            padding: var(--space-2) 0;
+            border-top: 1px solid var(--color-border-subtle);
+        }
+
+        .page-models .branch-answer { color: var(--color-text-secondary); flex: 1 1 180px; }
+        .page-models .branch-arrow { color: var(--color-text-tertiary); }
+        .page-models .branch-model { color: var(--color-text); font-weight: 600; }
+
+        .page-models .approach-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-5);
+        }
+
+        .page-models .tradeoff {
+            margin-top: var(--space-4);
+            padding-top: var(--space-4);
+            border-top: 1px solid var(--color-border-subtle);
+            color: var(--color-text-secondary);
+        }
+
+        .page-models .notes { color: var(--color-text-tertiary); }
+        .page-models .notes li { padding: var(--space-1) 0; }
+
+        @media (max-width: 600px) {
+            .page-models .spec-list li { flex-direction: column; gap: 0; }
+            .page-models .spec-val { text-align: left; }
+        }
+    </style>
+</head>
+<body class="page-models">
+
+<!-- Nav (keep links in sync across every page; mark current with class="active") -->
+<nav class="navbar">
+  <a href="/" class="navbar-brand">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <path d="M12 16v-4"></path>
+      <path d="M12 8h.01"></path>
+    </svg>
+    AI.JBHerrera
+  </a>
+  <div class="navbar-links">
+    <a href="/digest"          class="navbar-link">AI Digest</a>
+    <a href="/ai-stack"        class="navbar-link">AI Stack</a>
+    <a href="/claude-models"   class="navbar-link active">Models</a>
+    <a href="/skills"          class="navbar-link">Skills</a>
+    <a href="/higgins2"        class="navbar-link">Higgins 2.0</a>
+    <a href="/ca-bill-tracker" class="navbar-link">CA Bills</a>
+    <a href="https://jbherrera.com" class="navbar-link" target="_blank" rel="noopener">Main Site</a>
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg class="icon-sun"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+    </button>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header class="hero">
+    <div class="hero-tag">MODEL SELECTION</div>
+    <h1 class="text-display">Which Claude model, and when</h1>
+    <p>Four models, four jobs. Route each task to the cheapest model that clears your quality bar — not to the most capable one by reflex.</p>
+</header>
+
+<!-- Main content -->
+<main class="container section">
+
+    <section>
+        <h2 class="text-h2">The routing card</h2>
+        <p class="text-body" style="color: var(--color-text-secondary);">Specs as published by Anthropic. Prices are per million tokens, input / output.</p>
+
+        <div class="models-grid" style="margin-top: var(--space-6);">
+
+            <article class="card model-card is-fable">
+                <span class="badge badge-neutral">Top tier</span>
+                <h3 class="text-h3 model-name">Claude Fable 5</h3>
+                <p class="text-body-sm model-role">Next-generation intelligence for long-running agents.</p>
+                <ul class="spec-list text-body-sm">
+                    <li><span class="spec-key">Price</span><span class="spec-val">$10 / $50</span></li>
+                    <li><span class="spec-key">Context</span><span class="spec-val">1M tokens</span></li>
+                    <li><span class="spec-key">Max output</span><span class="spec-val">128k tokens</span></li>
+                    <li><span class="spec-key">Speed</span><span class="spec-val">Slower</span></li>
+                    <li><span class="spec-key">Knowledge cutoff</span><span class="spec-val">Jan 2026</span></li>
+                    <li><span class="spec-key">API ID</span><span class="spec-val">claude-fable-5</span></li>
+                </ul>
+                <ul class="use-list text-body-sm">
+                    <li>Long-horizon agentic runs</li>
+                    <li>Deep reasoning on novel problems</li>
+                    <li>Advanced research</li>
+                </ul>
+            </article>
+
+            <article class="card model-card is-opus">
+                <span class="badge badge-info">Default heavyweight</span>
+                <h3 class="text-h3 model-name">Claude Opus 5</h3>
+                <p class="text-body-sm model-role">For complex agentic coding and enterprise work.</p>
+                <ul class="spec-list text-body-sm">
+                    <li><span class="spec-key">Price</span><span class="spec-val">$5 / $25</span></li>
+                    <li><span class="spec-key">Context</span><span class="spec-val">1M tokens</span></li>
+                    <li><span class="spec-key">Max output</span><span class="spec-val">128k tokens</span></li>
+                    <li><span class="spec-key">Speed</span><span class="spec-val">Moderate</span></li>
+                    <li><span class="spec-key">Knowledge cutoff</span><span class="spec-val">May 2026</span></li>
+                    <li><span class="spec-key">API ID</span><span class="spec-val">claude-opus-5</span></li>
+                </ul>
+                <ul class="use-list text-body-sm">
+                    <li>Multihour autonomous coding agents</li>
+                    <li>Large-scale refactoring, systems engineering</li>
+                    <li>Vision-heavy workflows and computer use</li>
+                </ul>
+            </article>
+
+            <article class="card model-card is-sonnet">
+                <span class="badge badge-info">Workhorse</span>
+                <h3 class="text-h3 model-name">Claude Sonnet 5</h3>
+                <p class="text-body-sm model-role">The best combination of speed and intelligence.</p>
+                <ul class="spec-list text-body-sm">
+                    <li><span class="spec-key">Price</span><span class="spec-val">$3 / $15</span></li>
+                    <li><span class="spec-key">Context</span><span class="spec-val">1M tokens</span></li>
+                    <li><span class="spec-key">Max output</span><span class="spec-val">128k tokens</span></li>
+                    <li><span class="spec-key">Speed</span><span class="spec-val">Fast</span></li>
+                    <li><span class="spec-key">Knowledge cutoff</span><span class="spec-val">Jan 2026</span></li>
+                    <li><span class="spec-key">API ID</span><span class="spec-val">claude-sonnet-5</span></li>
+                </ul>
+                <ul class="use-list text-body-sm">
+                    <li>Code generation and data analysis</li>
+                    <li>Content creation, visual understanding</li>
+                    <li>Agentic tool use in production</li>
+                </ul>
+            </article>
+
+            <article class="card model-card is-haiku">
+                <span class="badge badge-success">Volume engine</span>
+                <h3 class="text-h3 model-name">Claude Haiku 4.5</h3>
+                <p class="text-body-sm model-role">The fastest model with near-frontier intelligence.</p>
+                <ul class="spec-list text-body-sm">
+                    <li><span class="spec-key">Price</span><span class="spec-val">$1 / $5</span></li>
+                    <li><span class="spec-key">Context</span><span class="spec-val">200k tokens</span></li>
+                    <li><span class="spec-key">Max output</span><span class="spec-val">64k tokens</span></li>
+                    <li><span class="spec-key">Speed</span><span class="spec-val">Fastest</span></li>
+                    <li><span class="spec-key">Knowledge cutoff</span><span class="spec-val">Feb 2025</span></li>
+                    <li><span class="spec-key">API ID</span><span class="spec-val">claude-haiku-4-5</span></li>
+                </ul>
+                <ul class="use-list text-body-sm">
+                    <li>Real-time, latency-sensitive apps</li>
+                    <li>High-volume classification and extraction</li>
+                    <li>Sub-agent tasks inside a larger run</li>
+                </ul>
+            </article>
+
+        </div>
+    </section>
+
+    <section class="section">
+        <h2 class="text-h2">The decision tree</h2>
+        <p class="text-body" style="color: var(--color-text-secondary);">Work top to bottom. Stop at the first question that fits the task in front of you.</p>
+
+        <div class="rail" style="margin-top: var(--space-6);">
+
+            <div class="rail-step">
+                <h3 class="text-h3 rail-q">1. Does the task run for hours without a human in the loop?</h3>
+                <div class="branch">
+                    <span class="branch-answer text-body-sm">Yes, and being wrong is expensive</span>
+                    <span class="branch-arrow">→</span>
+                    <span class="branch-model text-body-sm">Fable 5</span>
+                </div>
+                <div class="branch">
+                    <span class="branch-answer text-body-sm">Yes, and it is mostly coding</span>
+                    <span class="branch-arrow">→</span>
+                    <span class="branch-model text-body-sm">Opus 5</span>
+                </div>
+            </div>
+
+            <div class="rail-step">
+                <h3 class="text-h3 rail-q">2. Is it complex judgment, architecture, or hard engineering?</h3>
+                <div class="branch">
+                    <span class="branch-answer text-body-sm">Yes — accuracy outweighs cost</span>
+                    <span class="branch-arrow">→</span>
+                    <span class="branch-model text-body-sm">Opus 5</span>
+                </div>
+                <div class="branch">
+                    <span class="branch-answer text-body-sm">It also needs current knowledge</span>
+                    <span class="branch-arrow">→</span>
+                    <span class="branch-model text-body-sm">Opus 5 (freshest cutoff)</span>
+                </div>
+            </div>
+
+            <div class="rail-step">
+                <h3 class="text-h3 rail-q">3. Will this run repeatedly in production?</h3>
+                <div class="branch">
+                    <span class="branch-answer text-body-sm">Yes — normal quality bar</span>
+                    <span class="branch-arrow">→</span>
+                    <span class="branch-model text-body-sm">Sonnet 5</span>
+                </div>
+                <div class="branch">
+                    <span class="branch-answer text-body-sm">Yes, and it is simple and high-volume</span>
+                    <span class="branch-arrow">→</span>
+                    <span class="branch-model text-body-sm">Haiku 4.5</span>
+                </div>
+            </div>
+
+            <div class="rail-step">
+                <h3 class="text-h3 rail-q">4. Does a person wait on the response?</h3>
+                <div class="branch">
+                    <span class="branch-answer text-body-sm">Yes, and speed is the product</span>
+                    <span class="branch-arrow">→</span>
+                    <span class="branch-model text-body-sm">Haiku 4.5</span>
+                </div>
+                <div class="branch">
+                    <span class="branch-answer text-body-sm">Yes, but answer quality matters more</span>
+                    <span class="branch-arrow">→</span>
+                    <span class="branch-model text-body-sm">Sonnet 5</span>
+                </div>
+            </div>
+
+            <div class="rail-step">
+                <h3 class="text-h3 rail-q">5. Are the inputs long — big codebases, many documents?</h3>
+                <div class="branch">
+                    <span class="branch-answer text-body-sm">Over 200k tokens</span>
+                    <span class="branch-arrow">→</span>
+                    <span class="branch-model text-body-sm">Fable 5, Opus 5, or Sonnet 5</span>
+                </div>
+                <div class="branch">
+                    <span class="branch-answer text-body-sm">Comfortably under 200k</span>
+                    <span class="branch-arrow">→</span>
+                    <span class="branch-model text-body-sm">Haiku 4.5 is in play</span>
+                </div>
+            </div>
+
+            <div class="rail-step">
+                <h3 class="text-h3 rail-q">6. Still unsure?</h3>
+                <div class="branch">
+                    <span class="branch-answer text-body-sm">Start here, then tune</span>
+                    <span class="branch-arrow">→</span>
+                    <span class="branch-model text-body-sm">Opus 5</span>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <section class="section">
+        <h2 class="text-h2">Two ways to start</h2>
+        <div class="approach-grid" style="margin-top: var(--space-6);">
+
+            <article class="card">
+                <h3 class="text-h3">Efficiency-first</h3>
+                <p class="text-body-sm" style="color: var(--color-text-secondary);">Build on Haiku 4.5, test the use case hard, and upgrade only where you hit a real capability gap. Cheap to iterate, and it forces the expensive model to earn its place.</p>
+                <p class="text-body-sm tradeoff"><strong>Tradeoff:</strong> you can mistake a prompt problem for a model problem, then engineer around a limit that was never there.</p>
+            </article>
+
+            <article class="card">
+                <h3 class="text-h3">Capability-first</h3>
+                <p class="text-body-sm" style="color: var(--color-text-secondary);">Build on Opus 5, tune the prompts, then step down to cheaper models as the workflow stabilizes. You see the real quality ceiling on day one.</p>
+                <p class="text-body-sm tradeoff"><strong>Tradeoff:</strong> the step-down often never happens, and unit economics quietly bloat.</p>
+            </article>
+
+            <article class="card">
+                <h3 class="text-h3">The lever most people miss</h3>
+                <p class="text-body-sm" style="color: var(--color-text-secondary);">Recent Opus and Sonnet models take an <strong>effort</strong> parameter that trades intelligence against latency and cost inside a single model. Tuning effort is often better than switching models. On Opus 5, start at the default and step up for the most demanding agentic work.</p>
+                <p class="text-body-sm tradeoff"><strong>Then settle it with evidence:</strong> benchmark your own prompts and data before you commit a production budget.</p>
+            </article>
+
+        </div>
+    </section>
+
+    <section class="section">
+        <h2 class="text-h2">Notes</h2>
+        <ul class="notes text-body-sm">
+            <li>Sonnet 5 carries introductory pricing of $2 / $10 per million tokens through August 31, 2026. The $3 / $15 rate takes effect September 1, 2026.</li>
+            <li>Claude Mythos 5 shares Fable 5's specs and pricing but is not generally available — access runs through Anthropic's invitation-only Project Glasswing.</li>
+            <li>Fable 5 routes a small share of queries to Opus 5 under its safeguards layer. Anthropic reports this triggers in under 5% of sessions.</li>
+            <li>Haiku 4.5 supports extended thinking; Fable 5, Opus 5, and Sonnet 5 use adaptive thinking, always on for Fable 5.</li>
+            <li>Every model ID is a pinned snapshot, not an evergreen pointer. Pin deliberately.</li>
+            <li>Specs verified against Anthropic's model documentation on July 25, 2026. Pricing and availability change — confirm before committing a budget.</li>
+        </ul>
+    </section>
+
+</main>
+
+<!-- Footer -->
+<footer class="site-footer">
+    &copy; 2026 <a href="https://jbherrera.com" target="_blank" rel="noopener">JBHerrera.com</a> &nbsp;·&nbsp; AI tools for the independent professional
+</footer>
+
+<script>
+  document.getElementById('themeToggle').addEventListener('click', function(){
+    var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+  });
+</script>
+
+</body>
+</html>
