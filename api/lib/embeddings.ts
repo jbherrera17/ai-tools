@@ -1,4 +1,5 @@
 import { embed } from 'ai';
+import { getGatewayProviderOptions } from './gatewayByok.js';
 
 /**
  * Embedding helper — REQ-002 Phase 5.
@@ -22,6 +23,7 @@ export async function embedText(text: string): Promise<number[]> {
   const { embedding } = await embed({
     model: EMBED_MODEL,
     value: input,
+    providerOptions: getGatewayProviderOptions(),
   });
 
   return embedding;

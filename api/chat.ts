@@ -17,11 +17,13 @@ import { makeArtifactTools } from './lib/artifactTools.js';
 import { makeMemoryTools } from './lib/memoryTools.js';
 import { makeTeamTools } from './lib/teamTools.js';
 import { embedText } from './lib/embeddings.js';
+import { getGatewayProviderOptions } from './lib/gatewayByok.js';
+import { getDefaultHigginsModel, isAllowedModel } from './lib/modelCatalog.js';
 
 /**
  * Higgins 2.0 streaming chat endpoint — REQ-002 Phase 2.
  *
- * Protocol: POST { conversationId?: string, message: string }
+ * Protocol: POST { conversationId?: string, message: string, model?: string }
  * Returns:  AI SDK v6 UI Message Stream piped into the Node ServerResponse.
  *           Header `X-Conversation-Id` exposes the id so the client can
  *           persist it to localStorage for new conversations.
@@ -32,9 +34,9 @@ import { embedText } from './lib/embeddings.js';
  * Server reconstructs full history from Supabase each turn — client
  * only sends the latest user message. Single source of truth.
  *
- * Routes through Vercel AI Gateway via the provider string
- * "anthropic/claude-opus-4-7" (AI_GATEWAY_API_KEY auto-injected on
- * Vercel-linked projects).
+ * Routes through Vercel AI Gateway via catalog model IDs
+ * (HIGGINS_MODEL / request `model`, fallback anthropic/claude-opus-5).
+ * Request-scoped BYOK is attached when provider keys exist.
  */
 
 // 300s = the platform max. A team turn = parallel dept fan-out (each dept
@@ -50,6 +52,7 @@ export const config = { maxDuration: 300 };
 interface ChatBody {
   conversationId?: string;
   message?: string;
+  model?: string;
 }
 
 /**
@@ -98,6 +101,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!incoming) {
     res.status(400).json({ error: 'message is required' });
     return;
+  }
+
+  // Optional client model: must be in the curated catalog. Omitted/empty
+  // falls back to HIGGINS_MODEL or anthropic/claude-opus-5.
+  let model = getDefaultHigginsModel();
+  if (typeof body.model === 'string' && body.model.trim()) {
+    const requested = body.model.trim();
+    if (!isAllowedModel(requested)) {
+      res.status(400).json({ error: 'model is not in the allowlist', model: requested });
+      return;
+    }
+    model = requested;
   }
 
   // Resolve / create conversation
@@ -160,6 +175,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   console.log('[higgins/chat] streamText starting', {
     conversationId,
+    model,
     msgCount: uiMessages.length,
     memoriesInjected: recalledMemories.length,
     hasGatewayKey: !!process.env.AI_GATEWAY_API_KEY,
@@ -220,7 +236,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const result = streamText({
-    model: 'anthropic/claude-opus-4-7',
+    model,
     system: systemPrompt + memoryBlock,
     messages: modelMessages,
     tools: {
@@ -228,6 +244,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ...makeMemoryTools(conversationId),
       ...makeTeamTools(conversationId),
     },
+    providerOptions: getGatewayProviderOptions(),
     prepareStep: ({ stepNumber }) => {
       // Force run_team_workstreams only on the first step of the turn.
       // Subsequent steps run unconstrained (default auto) so the model can

@@ -16,6 +16,9 @@ import anthropic
 import requests
 from bs4 import BeautifulSoup
 
+# Anthropic SDK model id (not an AI Gateway string). Override with DIGEST_MODEL.
+DIGEST_MODEL = os.environ.get('DIGEST_MODEL') or 'claude-sonnet-4-5-20250929'
+
 
 def fetch_article_content(url):
     """Fetch and extract main content and metadata from article URL.
@@ -111,7 +114,7 @@ IMPORTANT: Return ONLY raw HTML. Do NOT wrap your response in markdown code fenc
 """
 
     message = client.messages.create(
-        model="claude-sonnet-4-5-20250929",
+        model=DIGEST_MODEL,
         max_tokens=1024,
         messages=[
             {"role": "user", "content": prompt}
@@ -235,7 +238,7 @@ IMPORTANT: Return ONLY valid JSON. Do NOT wrap in markdown code fences.
 """
 
     message = client.messages.create(
-        model="claude-sonnet-4-5-20250929",
+        model=DIGEST_MODEL,
         max_tokens=2048,
         messages=[
             {"role": "user", "content": prompt}
