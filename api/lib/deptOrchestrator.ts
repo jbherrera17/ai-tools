@@ -6,6 +6,8 @@ import {
   type SkillRow,
 } from './higginsRepo.js';
 import { stripFrontmatter } from './skillCatalog.js';
+import { getGatewayProviderOptions } from './gatewayByok.js';
+import { getDefaultDeptModel } from './modelCatalog.js';
 
 /**
  * Department orchestrator runtime — REQ-004 Phase 4.
@@ -61,12 +63,10 @@ export interface RunDeptArgs {
   abortSignal?: AbortSignal;
 }
 
-// Sonnet 4.6 for sub-calls (REQ-004 Phase 4 decision 2026-05-22): Opus 4.7
-// for 4× parallel structured generation reliably exceeded the gateway's
-// reasonable response window. Sonnet is 3–5× faster, still capable for
-// departmental synthesis. Higgins (the user-facing synthesizer) stays on
-// Opus.
-const MODEL = 'anthropic/claude-sonnet-4-6';
+// Dept sub-calls use DEPT_MODEL (fallback anthropic/claude-sonnet-5).
+// Sonnet stays on the dept path so 4× parallel generateObject stays inside
+// the gateway window; Higgins (the user-facing synthesizer) is picked in
+// /api/chat and is not affected by this env.
 
 // Per-call wall-clock cap. Parallel fan-out means total fan-out wall time
 // is max(sub-call latency); 120s accommodates Sonnet producing the full
@@ -99,11 +99,12 @@ export async function runDeptOrchestrator(args: RunDeptArgs): Promise<DeptResult
   // Promise.race against a timeout so a hung gateway response surfaces as
   // a clean per-dept error rather than killing the whole fan-out.
   const generation = generateObject({
-    model: MODEL,
+    model: getDefaultDeptModel(),
     schema: DEPT_RESPONSE_SCHEMA,
     system: prompt.system,
     prompt: prompt.user,
     abortSignal: args.abortSignal,
+    providerOptions: getGatewayProviderOptions(),
   });
 
   let timeoutHandle: NodeJS.Timeout | undefined;
