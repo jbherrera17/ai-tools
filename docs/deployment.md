@@ -29,7 +29,15 @@ Defined in `.env` (gitignored). Template in `.env.example`. Required keys:
 | `SUPABASE_SERVICE_KEY` | Service-role key (admin writes) |
 | `USE_DATABASE` | `true` to use Supabase, unset for hardcoded fallback |
 | `ADMIN_API_TOKEN` | Bearer token gating `api/admin/*` endpoints (skipped in dev) |
-| `ANTHROPIC_API_KEY` | Claude API for `api/summarize.py` |
+| `ANTHROPIC_API_KEY` | Claude for `api/summarize.py` and AI Gateway BYOK |
+| `HIGGINS_MODEL` | Higgins chat default (AI Gateway id, catalog). Fallback `anthropic/claude-opus-5` |
+| `DEPT_MODEL` | Dept orchestrator (AI Gateway id, catalog). Fallback `anthropic/claude-sonnet-5` |
+| `DIGEST_MODEL` | Anthropic SDK id for digest. Fallback `claude-sonnet-4-5-20250929` |
+| `OPENAI_API_KEY` | Optional. Gateway BYOK for OpenAI models + embeddings |
+| `XAI_API_KEY` | Optional. Gateway BYOK for Grok |
+| `GOOGLE_GENERATIVE_AI_API_KEY` or `GOOGLE_API_KEY` | Optional. Gateway BYOK for Gemini |
+
+`AI_GATEWAY_API_KEY` is for local/dev. On Vercel, remove a stale/shared key so this project's OIDC is used.
 
 To sync local `.env` from Vercel:
 
