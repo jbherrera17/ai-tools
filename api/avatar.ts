@@ -10,8 +10,9 @@ import { getServiceClient } from './lib/supabaseClient.js';
  * Returns an SVG with a two-letter monogram on a deterministic gradient
  * from the Synergi palette. The slug → gradient mapping is hash-stable
  * so the same agent always lands on the same gradient pair across
- * deploys. Higgins (`exec-orchestrator`) gets the "HG" monogram with a
- * 2px white ring to distinguish the top-level orchestrator.
+ * deploys. Higgins (`exec-orchestrator`) 302s to the 3D portrait PNG
+ * so team-modal cards and `/api/avatar` consumers show the real face
+ * instead of the HG monogram. Other slugs keep the SVG monogram.
  *
  * Caching: 24h public CDN cache. When the character name changes the
  * sync script bumps `last_seen_at` but the avatar URL doesn't carry
@@ -21,7 +22,8 @@ import { getServiceClient } from './lib/supabaseClient.js';
  * Hand-designed character portraits (the v2 ambition per REQ-004 §10)
  * sit in `skill_registry.avatar_url`. When that column is non-NULL,
  * `/api/avatar` should 302 to the blob URL — but that path lands in
- * a later phase, so v1 always renders the SVG monogram here.
+ * a later phase, so v1 always renders the SVG monogram here (except
+ * Higgins, who now redirects to `/images/higgins.png`).
  */
 
 export const config = { maxDuration: 5 };
@@ -105,6 +107,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const slug = (req.query.slug as string | undefined)?.trim();
   if (!slug || !/^[a-z0-9-]+$/.test(slug)) {
     res.status(400).json({ error: 'slug query param required (lowercase letters, digits, hyphens)' });
+    return;
+  }
+
+  // Higgins portrait — team-modal cards and other /api/avatar consumers
+  // should show the 3D face, not the HG SVG monogram.
+  if (slug === 'exec-orchestrator') {
+    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400, immutable');
+    res.redirect(302, '/images/higgins.png');
     return;
   }
 
