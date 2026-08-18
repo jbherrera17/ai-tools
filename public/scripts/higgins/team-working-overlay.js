@@ -226,7 +226,12 @@ const TeamWorking = (() => {
     for (const s of sections) {
       const entries = roster[s.key] || [];
       if (!entries.length) continue;
-      out.push(`<div class=\"tw-section\">\n        <div class=\"tw-section-label\">${s.label}</div>\n        <div class=\"tw-cards\">\n          ${entries.map(renderCard).join('')}\n        </div>\n      </div>`);
+      out.push(`<div class="tw-section">
+        <div class="tw-section-label">${s.label}</div>
+        <div class="tw-cards">
+          ${entries.map(renderCard).join('')}
+        </div>
+      </div>`);
     }
     return out.join('');
   }
@@ -235,7 +240,12 @@ const TeamWorking = (() => {
     const slug = String(entry.slug || '');
     const character = entry.display_name || slug;
     const avatarUrl = '/api/avatar?slug=' + encodeURIComponent(slug) + '&size=64';
-    return `<div class=\"tw-card\">\n      <img src=\"${avatarUrl}\" alt=\"${escapeHtml(character)} avatar\" />\n      <div class=\"tw-card-character\">${escapeHtml(character)}</div>\n      <div class=\"tw-card-slug\">${escapeHtml(slug)}</div>\n      <div class=\"tw-card-status\">${escapeHtml(STATUSES[0])}</div>\n    </div>`;
+    return `<div class="tw-card">
+      <img src="${avatarUrl}" alt="${escapeHtml(character)} avatar" />
+      <div class="tw-card-character">${escapeHtml(character)}</div>
+      <div class="tw-card-slug">${escapeHtml(slug)}</div>
+      <div class="tw-card-status">${escapeHtml(STATUSES[0])}</div>
+    </div>`;
   }
 
   function getBrief() { return currentBrief; }
