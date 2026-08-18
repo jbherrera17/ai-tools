@@ -25,6 +25,13 @@ const TYPE_LABEL = {
   pptx: 'PPTX',
   'remotion-video': 'VIDEO',
 };
+const TYPE_EXT = {
+  markdown: 'md',
+  table: 'md',
+  html: 'html',
+  docx: 'docx',
+  pptx: 'pptx',
+};
 
 let layerEl = null;
 let dockEl = null;
@@ -71,9 +78,10 @@ function defaultBox(index) {
   // Anchor to the right portion of the workspace, clear of the Higgins
   // card (top-left, up to ~720px wide). Cascade with a column wrap so
   // many open artifacts don't pile up under each other.
+  // Top is relative to #artifact-layer, which already starts below the site nav.
   const HIGGINS_CLEARANCE = 560;
   const baseLeft = Math.max(HIGGINS_CLEARANCE, window.innerWidth - 580);
-  const baseTop = 80;
+  const baseTop = 16;
   const wrap = Math.floor((index * CASCADE_STEP) / 280);
   return {
     left: Math.max(HIGGINS_CLEARANCE, baseLeft - wrap * 60),
@@ -88,11 +96,23 @@ function escapeHtml(s) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+function slugFilename(title, id) {
+  const raw = String(title || id || 'artifact');
+  const slug = raw
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60);
+  return slug || 'artifact';
+}
+
 const ICON = {
   min: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="6" y1="14" x2="18" y2="14"/></svg>',
   max: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="5" y="5" width="14" height="14" rx="1"/></svg>',
   restore: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="8" width="12" height="12" rx="1"/><path d="M8 8V5h12v12h-3"/></svg>',
   close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>',
+  copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+  download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
 };
 
 export class ArtifactWindow {
@@ -151,7 +171,7 @@ export class ArtifactWindow {
     this.el = document.createElement('div');
     this.el.className = 'artifact-window';
     this.el.style.left = box.left + 'px';
-    this.el.style.top = box.top + 'px';
+    this.el.style.top = Math.max(0, box.top) + 'px';
     this.el.style.width = box.width + 'px';
     this.el.style.height = box.height + 'px';
     this.el.style.zIndex = String(++zCounter);
@@ -163,6 +183,8 @@ export class ArtifactWindow {
         <span class="aw-title">${escapeHtml(this.title)}</span>
         <span class="aw-version" data-aw-version>v${this.version}</span>
         <div class="aw-controls">
+          <button class="aw-btn" data-aw-copy title="Copy source">${ICON.copy}</button>
+          <button class="aw-btn" data-aw-download title="Download file">${ICON.download}</button>
           <button class="aw-btn" data-aw-min title="Minimize">${ICON.min}</button>
           <button class="aw-btn" data-aw-max title="Maximize">${ICON.max}</button>
           <button class="aw-btn" data-aw-close title="Close">${ICON.close}</button>
@@ -209,6 +231,67 @@ export class ArtifactWindow {
     this.el.querySelector('.aw-type-badge').textContent = TYPE_LABEL[this.type] || this.type.toUpperCase();
     this.versionEl.textContent = 'v' + this.version;
     this._render();
+  }
+
+  _sourceText() {
+    if (typeof this.content === 'string') return this.content;
+    if (this.content && typeof this.content === 'object') {
+      return String(this.content.body ?? '');
+    }
+    return '';
+  }
+
+  _downloadName() {
+    const base = slugFilename(this.title, this.id);
+    if (this.type === 'code') {
+      const lang = String(this.language || '').trim().toLowerCase();
+      const ext = lang || 'txt';
+      return `${base}.${ext}`;
+    }
+    return `${base}.${TYPE_EXT[this.type] || 'txt'}`;
+  }
+
+  async copySource() {
+    const text = this._sourceText();
+    const btn = this.el.querySelector('[data-aw-copy]');
+    try {
+      await navigator.clipboard.writeText(text);
+      if (btn) {
+        btn.title = 'Copied';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.title = 'Copy source';
+          btn.classList.remove('copied');
+        }, 1600);
+      }
+      if (typeof showToast === 'function') showToast('Copied Markdown source');
+    } catch (err) {
+      console.warn('[higgins/artifact] clipboard write failed', err);
+      if (typeof showToast === 'function') showToast('Copy failed');
+    }
+  }
+
+  downloadSource() {
+    if ((this.type === 'docx' || this.type === 'pptx') && this.blobUrl) {
+      const a = document.createElement('a');
+      a.href = this.blobUrl;
+      a.download = this._downloadName();
+      a.rel = 'noopener';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      return;
+    }
+    const text = this._sourceText();
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = this._downloadName();
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   _render() {
@@ -297,6 +380,14 @@ export class ArtifactWindow {
 
   _wire() {
     this.el.addEventListener('mousedown', () => this.bringToFront(), true);
+    this.el.querySelector('[data-aw-copy]').addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.copySource();
+    });
+    this.el.querySelector('[data-aw-download]').addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.downloadSource();
+    });
     this.el.querySelector('[data-aw-min]').addEventListener('click', (e) => {
       e.stopPropagation();
       this.minimize();
@@ -315,7 +406,17 @@ export class ArtifactWindow {
       this.toggleMaximize();
     });
 
-    // Drag from titlebar
+    // Selecting the rendered preview copies HTML; put the Markdown (or
+    // other source) on the clipboard instead so a .md reader keeps syntax.
+    this.bodyEl.addEventListener('copy', (e) => {
+      const raw = this._sourceText();
+      if (!raw) return;
+      e.preventDefault();
+      if (e.clipboardData) e.clipboardData.setData('text/plain', raw);
+      else if (navigator.clipboard) navigator.clipboard.writeText(raw);
+    });
+
+    // Drag from titlebar. Layer starts below the site nav, so y=0 is already clear.
     const titlebar = this.el.querySelector('[data-aw-drag]');
     titlebar.addEventListener('mousedown', (e) => {
       if (e.target.closest('.aw-btn')) return;
