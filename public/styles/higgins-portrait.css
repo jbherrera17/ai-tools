@@ -1,0 +1,16 @@
+/* Portrait replaces the CSS face in both window states */
+.avatar-3d {
+  background: #000 url('/images/higgins.png') center 18% / cover no-repeat;
+}
+.avatar-face {
+  opacity: 0; /* keep in DOM — chat.js toggles .thinking/.speaking on #avatarFace */
+}
+.ambient-avatar .avatar-3d-mini {
+  background: #000 url('/images/higgins.png') center 18% / cover no-repeat;
+}
+.ambient-avatar .mini-face {
+  opacity: 0;
+}
+.higgins-avatar-container {
+  background: #000;
+}
