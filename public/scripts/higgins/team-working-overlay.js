@@ -1,3 +1,12 @@
+(function () {
+  if (window.HigginsNotify) return;
+  if (document.querySelector('script[data-higgins-notify]')) return;
+  var s = document.createElement('script');
+  s.src = '/scripts/higgins/notifications.js';
+  s.setAttribute('data-higgins-notify', '1');
+  (document.head || document.documentElement).appendChild(s);
+})();
+
 // ============================================
 // TEAM WORKING OVERLAY — REQ-004 Phase 4 + Phase 5 aliveness
 // Shown while run_team_workstreams is in flight so the wait feels alive.
@@ -14,7 +23,7 @@
 //   The fan-out runs inside the /api/chat function (maxDuration ceiling). If
 //   that function is killed mid-stream, the HTTP stream closes at EOF with no
 //   `error` part — so chat.js's `for await` loop just *ends* and no close
-//   event ever fires. Pre-fix, the overlay span­ned forever (observed: a
+//   event ever fires. Pre-fix, the overlay spanned forever (observed: a
 //   182-minute "Synergi Team Working…" spinner over a job that died at the
 //   3-minute mark).
 //
@@ -109,6 +118,7 @@ const TeamWorking = (() => {
       n.style.fontStyle = 'normal';
     });
     setStalledView(true);
+    try { window.HigginsNotify && window.HigginsNotify.workflowStalled({ brief: currentBrief }); } catch (_) {}
   }
 
   // Relaunch the workstreams with the same brief. The team is still approved
@@ -230,6 +240,8 @@ const TeamWorking = (() => {
     </div>`;
   }
 
-  return { open, close, markStalled, retry, dismiss, isOpen, isStalled };
+  function getBrief() { return currentBrief; }
+
+  return { open, close, markStalled, retry, dismiss, isOpen, isStalled, getBrief };
 })();
 window.TeamWorking = TeamWorking;
