@@ -1,3 +1,12 @@
+(function () {
+  if (window.HigginsNotify) return;
+  if (document.querySelector('script[data-higgins-notify]')) return;
+  var s = document.createElement('script');
+  s.src = '/scripts/higgins/notifications.js';
+  s.setAttribute('data-higgins-notify', '1');
+  (document.head || document.documentElement).appendChild(s);
+})();
+
 // ============================================
 // TEAM ASSEMBLY MODAL — REQ-004 Phase 3
 // Center-screen modal driven by the `assemble_team` tool's output.
@@ -241,6 +250,7 @@ const TeamModal = (() => {
 
   async function approve() {
     if (!state || working) return;
+    try { window.HigginsNotify && window.HigginsNotify.requestPermission(); } catch (_) {}
     working = true;
     document.getElementById('teamModalApproveBtn').disabled = true;
     document.getElementById('teamModalCancelBtn').disabled = true;
