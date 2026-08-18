@@ -6,7 +6,10 @@
 
 #artifact-layer {
   position: fixed;
-  inset: 0;
+  top: var(--nav-height, 56px);     /* sit below the sticky site navbar */
+  left: 0;
+  right: 0;
+  bottom: 0;
   pointer-events: none;             /* layer is invisible; windows opt in */
   z-index: 80;                      /* below higgins-card (100), above workspace */
 }
@@ -117,6 +120,7 @@
   transition: background var(--duration-fast) var(--ease-default);
 }
 .aw-btn:hover { background: var(--surface-sunken); color: var(--text-primary); }
+.aw-btn.copied { color: var(--color-success, #34c759); }
 .aw-btn svg { width: 12px; height: 12px; }
 
 /* ── Body ─────────────────────────────── */
@@ -271,9 +275,9 @@
 /* Maximized state */
 .artifact-window.maximized {
   left: var(--space-4) !important;
-  top: calc(var(--nav-height, 60px) + var(--space-4)) !important;
-  width: calc(100vw - var(--space-8)) !important;
-  height: calc(100vh - var(--nav-height, 60px) - var(--space-8)) !important;
+  top: var(--space-4) !important;
+  width: calc(100% - var(--space-8)) !important;
+  height: calc(100% - var(--space-8)) !important;
   max-width: none;
   max-height: none;
 }
