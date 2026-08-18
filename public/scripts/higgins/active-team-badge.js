@@ -1,3 +1,12 @@
+(function () {
+  if (document.getElementById('higgins-portrait-css')) return;
+  var l = document.createElement('link');
+  l.id = 'higgins-portrait-css';
+  l.rel = 'stylesheet';
+  l.href = '/styles/higgins-portrait.css';
+  (document.head || document.documentElement).appendChild(l);
+})();
+
 // ============================================
 // ACTIVE TEAM BADGE — shows in the Higgins card header when a session
 // is approved on the current conversation. Also caches the roster in
