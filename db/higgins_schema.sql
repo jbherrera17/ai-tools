@@ -253,3 +253,22 @@ SELECT
   (SELECT COUNT(*) FROM higgins_messages m  WHERE m.conversation_id = c.id) AS message_count,
   (SELECT COUNT(*) FROM higgins_artifacts a WHERE a.conversation_id = c.id) AS artifact_count
 FROM higgins_conversations c;
+
+-- ============================================
+-- MCP CONNECTIONS — REQ: Higgins Navigate "MCP Connections" module (migration 004)
+-- One row per connector (single-owner v1). Custom connectors carry a server
+-- URL the chat backend uses to load live MCP tools; standard connectors are
+-- awareness-only (surfaced in Higgins's system prompt).
+-- ============================================
+CREATE TABLE IF NOT EXISTS higgins_mcp_connections (
+  connector_id  TEXT PRIMARY KEY,
+  user_id       TEXT NOT NULL DEFAULT 'jb',
+  name          TEXT NOT NULL,
+  custom        BOOLEAN NOT NULL DEFAULT false,
+  enabled       BOOLEAN NOT NULL DEFAULT false,
+  url           TEXT,
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_higgins_mcp_conn_user_enabled
+  ON higgins_mcp_connections (user_id, enabled);

@@ -11,6 +11,14 @@
   'use strict';
 
   var STORAGE_KEY = 'higgins.mcp.connections.v1';
+  var API_URL = '/api/mcp-connections';
+
+  // authHeaders() is a global defined in chat.js (loaded before this file).
+  function headers() {
+    return (typeof authHeaders === 'function')
+      ? authHeaders()
+      : { 'Content-Type': 'application/json' };
+  }
 
   // Source of truth for the connector list. Mirrors the connectors shown in
   // the account's connectors panel. `custom: true` connectors expose a URL
@@ -60,6 +68,53 @@
     } catch (err) {
       console.error('[higgins] MCP connections: failed to persist state', err);
     }
+  }
+
+  // Merge server rows (source of truth) into local state, then re-render.
+  // Standard connectors sync enabled; custom connectors sync enabled + url.
+  async function fetchServerState() {
+    try {
+      var res = await fetch(API_URL, { headers: headers() });
+      if (!res.ok) return false;
+      var data = await res.json();
+      var rows = Array.isArray(data && data.connections) ? data.connections : [];
+      if (!rows.length) return false;
+      rows.forEach(function (row) {
+        if (!row || !row.connector_id) return;
+        if (!state[row.connector_id]) state[row.connector_id] = { enabled: false, url: '' };
+        state[row.connector_id].enabled = !!row.enabled;
+        state[row.connector_id].url = typeof row.url === 'string' ? row.url : '';
+      });
+      persist();
+      return true;
+    } catch (err) {
+      console.warn('[higgins] MCP connections: server fetch failed, using local cache', err);
+      return false;
+    }
+  }
+
+  // Full connector set as the server expects it (one row per known connector).
+  function serverPayload() {
+    return CONNECTORS.map(function (c) {
+      var s = state[c.id] || { enabled: false, url: '' };
+      return {
+        connector_id: c.id,
+        name: c.name,
+        custom: !!c.custom,
+        enabled: !!s.enabled,
+        url: c.custom ? (s.url || null) : null
+      };
+    });
+  }
+
+  async function pushServerState() {
+    var res = await fetch(API_URL, {
+      method: 'PUT',
+      headers: headers(),
+      body: JSON.stringify({ connections: serverPayload() })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
   }
 
   function isValidUrl(value) {
@@ -176,8 +231,12 @@
     loadState();
     var scrim = document.getElementById('mcpScrim');
     if (!scrim) return;
-    render();
+    render(); // paint from local cache immediately
     scrim.classList.add('open');
+    // Then reconcile with the server (source of truth) and re-render.
+    fetchServerState().then(function (ok) {
+      if (ok && scrim.classList.contains('open')) render();
+    });
   };
 
   window.closeMcpConnections = function closeMcpConnections(e) {
@@ -186,7 +245,7 @@
     if (scrim) scrim.classList.remove('open');
   };
 
-  window.saveMcpConnections = function saveMcpConnections() {
+  window.saveMcpConnections = async function saveMcpConnections() {
     // Validate: any enabled custom connector must have a valid URL.
     var missing = CONNECTORS.filter(function (c) {
       return c.custom && state[c.id].enabled && !isValidUrl(state[c.id].url);
@@ -200,10 +259,31 @@
       }
       return;
     }
-    if (typeof showToast === 'function') {
-      showToast(connectedCount() + ' connector' + (connectedCount() === 1 ? '' : 's') + ' saved');
+
+    var btn = document.getElementById('mcpSaveBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+    try {
+      var data = await pushServerState();
+      // Re-sync from the server's normalized response (e.g. rejected URLs).
+      var rows = Array.isArray(data && data.connections) ? data.connections : [];
+      rows.forEach(function (row) {
+        if (!row || !row.connector_id || !state[row.connector_id]) return;
+        state[row.connector_id].enabled = !!row.enabled;
+        state[row.connector_id].url = typeof row.url === 'string' ? row.url : '';
+      });
+      persist();
+      if (typeof showToast === 'function') {
+        showToast(connectedCount() + ' connector' + (connectedCount() === 1 ? '' : 's') + ' saved');
+      }
+      window.closeMcpConnections();
+    } catch (err) {
+      console.error('[higgins] MCP connections: save failed', err);
+      if (typeof showToast === 'function') {
+        showToast('Save failed — kept locally. ' + (err && err.message ? err.message : ''));
+      }
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = 'Save connections'; }
     }
-    window.closeMcpConnections();
   };
 
   // Esc closes the modal.

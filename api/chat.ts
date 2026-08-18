@@ -8,11 +8,16 @@ import {
   appendMessage,
   recallMemories,
   getActiveTeamSession,
+  listMcpConnections,
   type Message,
   type RecalledMemory,
 } from './lib/higginsRepo.js';
 import { requireOwner } from './lib/auth.js';
-import { buildHigginsSystemPrompt } from './lib/higginsSystemPrompt.js';
+import {
+  buildHigginsSystemPrompt,
+  type McpConnectionSummary,
+} from './lib/higginsSystemPrompt.js';
+import { loadCustomMcpTools, type McpToolset } from './lib/mcpBridge.js';
 import { makeArtifactTools } from './lib/artifactTools.js';
 import { makeMemoryTools } from './lib/memoryTools.js';
 import { makeTeamTools } from './lib/teamTools.js';
@@ -183,7 +188,54 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   });
 
   const modelMessages = await convertToModelMessages(uiMessages);
-  const systemPrompt = await buildHigginsSystemPrompt({ conversationId });
+
+  // MCP connections — load JB's enabled connectors. Enabled custom connectors
+  // with a URL get a live connection to their remote MCP server so their tools
+  // are callable this turn; standard connectors are awareness-only (surfaced
+  // in the system prompt). Best-effort: any failure degrades a connector to
+  // awareness-only and never blocks chat. Clients are closed in onFinish.
+  let mcpToolset: McpToolset = {
+    tools: {},
+    connected: [],
+    failures: [],
+    close: async () => {},
+  };
+  let mcpSummaries: McpConnectionSummary[] = [];
+  try {
+    const connections = await listMcpConnections();
+    const enabled = connections.filter((c) => c.enabled);
+    const customWithUrl = enabled.filter((c) => c.custom && !!c.url);
+    if (customWithUrl.length) {
+      mcpToolset = await loadCustomMcpTools(
+        customWithUrl.map((c) => ({
+          connector_id: c.connector_id,
+          name: c.name,
+          url: c.url as string,
+        })),
+      );
+    }
+    const liveSet = new Set(mcpToolset.connected);
+    mcpSummaries = enabled.map((c) => ({
+      name: c.name,
+      custom: c.custom,
+      enabled: true,
+      url: c.url,
+      live: liveSet.has(c.connector_id),
+    }));
+    console.log('[higgins/chat] MCP connections', {
+      enabled: enabled.length,
+      liveConnectors: mcpToolset.connected,
+      mcpToolCount: Object.keys(mcpToolset.tools).length,
+      failures: mcpToolset.failures,
+    });
+  } catch (err) {
+    console.warn('[higgins/chat] MCP connection load skipped', (err as Error).message);
+  }
+
+  const systemPrompt = await buildHigginsSystemPrompt({
+    conversationId,
+    mcpConnections: mcpSummaries,
+  });
 
   // REQ-004 Phase 3+ — toolChoice forcing for run_team_workstreams.
   //
@@ -243,6 +295,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ...makeArtifactTools(conversationId),
       ...makeMemoryTools(conversationId),
       ...makeTeamTools(conversationId),
+      ...mcpToolset.tools,
     },
     providerOptions: getGatewayProviderOptions(),
     prepareStep: ({ stepNumber }) => {
@@ -280,8 +333,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       } catch (err) {
         console.error('[higgins/chat] onFinish persist failed', err);
       }
+      // Release live MCP transports now the turn is fully streamed.
+      await mcpToolset.close().catch((err) =>
+        console.warn('[higgins/chat] MCP close failed', (err as Error).message),
+      );
     },
     onError: ({ error }) => {
+      // Release live MCP transports on stream failure too (onFinish may not fire).
+      mcpToolset.close().catch(() => { /* noop */ });
       // Never pass the raw `error` to console.error. AI SDK error objects
       // sometimes carry exotic property descriptors that crash Node's
       // util.inspect — and Node crashing here takes down the dev process,
