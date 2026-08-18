@@ -84,6 +84,11 @@ const TeamWorking = (() => {
   }
 
   function close() {
+    // chat.js calls close() on fan_out_complete / no_active_team / empty_roster.
+    // Capture the brief before tearing down so a background tab still knows
+    // which workflow finished. Skip if we were stalled/idle (retry/dismiss).
+    const wasWorking = state === 'working';
+    const brief = currentBrief;
     stopTickers();
     state = 'idle';
     retrying = false;
@@ -97,6 +102,9 @@ const TeamWorking = (() => {
     // Reset display so the next open starts at 0:00 even before the first tick.
     const el = document.getElementById('teamWorkingElapsed');
     if (el) { el.textContent = '0:00'; el.classList.remove('stalled'); }
+    if (wasWorking) {
+      try { window.HigginsNotify && window.HigginsNotify.workflowFinished({ brief: brief }); } catch (_) {}
+    }
   }
 
   // Flip an open overlay into the stalled state. Idempotent, and a no-op when
@@ -218,12 +226,7 @@ const TeamWorking = (() => {
     for (const s of sections) {
       const entries = roster[s.key] || [];
       if (!entries.length) continue;
-      out.push(`<div class="tw-section">
-        <div class="tw-section-label">${s.label}</div>
-        <div class="tw-cards">
-          ${entries.map(renderCard).join('')}
-        </div>
-      </div>`);
+      out.push(`<div class=\"tw-section\">\n        <div class=\"tw-section-label\">${s.label}</div>\n        <div class=\"tw-cards\">\n          ${entries.map(renderCard).join('')}\n        </div>\n      </div>`);
     }
     return out.join('');
   }
@@ -232,12 +235,7 @@ const TeamWorking = (() => {
     const slug = String(entry.slug || '');
     const character = entry.display_name || slug;
     const avatarUrl = '/api/avatar?slug=' + encodeURIComponent(slug) + '&size=64';
-    return `<div class="tw-card">
-      <img src="${avatarUrl}" alt="${escapeHtml(character)} avatar" />
-      <div class="tw-card-character">${escapeHtml(character)}</div>
-      <div class="tw-card-slug">${escapeHtml(slug)}</div>
-      <div class="tw-card-status">${escapeHtml(STATUSES[0])}</div>
-    </div>`;
+    return `<div class=\"tw-card\">\n      <img src=\"${avatarUrl}\" alt=\"${escapeHtml(character)} avatar\" />\n      <div class=\"tw-card-character\">${escapeHtml(character)}</div>\n      <div class=\"tw-card-slug\">${escapeHtml(slug)}</div>\n      <div class=\"tw-card-status\">${escapeHtml(STATUSES[0])}</div>\n    </div>`;
   }
 
   function getBrief() { return currentBrief; }
