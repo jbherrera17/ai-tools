@@ -45,3 +45,34 @@ export async function uploadArtifactBlob(args: {
 
   return { url: result.url, pathname: result.pathname, sizeBytes: args.buffer.length };
 }
+
+const UPLOAD_PREFIX = 'higgins/uploads';
+
+/**
+ * Uploads a user-attached chat file (image, PDF, or text) to Vercel Blob
+ * and returns the public URL. Filenames are sanitized; a random suffix keeps
+ * uploads collision-safe. Same public-access rationale as artifacts above.
+ */
+export async function uploadUserFileBlob(args: {
+  name: string;
+  mediaType: string;
+  buffer: Buffer;
+}): Promise<{ url: string; pathname: string; sizeBytes: number }> {
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  if (!token) {
+    throw new Error('BLOB_READ_WRITE_TOKEN is not set');
+  }
+
+  const safeName =
+    (args.name || 'file').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120) || 'file';
+  const pathname = `${UPLOAD_PREFIX}/${safeName}`;
+
+  const result = await put(pathname, args.buffer, {
+    access: 'public',
+    contentType: args.mediaType || 'application/octet-stream',
+    token,
+    addRandomSuffix: true,
+  });
+
+  return { url: result.url, pathname: result.pathname, sizeBytes: args.buffer.length };
+}
