@@ -2423,3 +2423,90 @@ html, body { height: 100%; overflow: hidden; }
   color: #fff;
 }
 .mcp-btn-primary:hover { background: var(--agent-accent); filter: brightness(0.95); color: #fff; }
+
+/* ============================================
+   CHAT ATTACHMENTS — "+" button, upload chips, in-message chips
+   ============================================ */
+.attach-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all var(--duration-fast);
+}
+.attach-btn:hover { background: var(--agent-accent-muted); color: var(--agent-accent); }
+.attach-btn svg { width: 18px; height: 18px; }
+.attach-btn:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+
+/* Pending-upload chip row above the textarea */
+.attachment-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+.attachment-row[hidden] { display: none; }
+
+.attach-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 220px;
+  padding: 5px 6px 5px 8px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  font-size: 0.72rem;
+}
+.attach-chip.uploading { opacity: 0.7; }
+.attach-chip.error { border-color: var(--status-danger); }
+.attach-chip-icon {
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  color: var(--agent-accent);
+}
+.attach-chip-icon svg { width: 16px; height: 16px; }
+.attach-chip.error .attach-chip-icon { color: var(--status-danger); }
+.attach-chip-body { min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+.attach-chip-name {
+  color: var(--text-primary);
+  font-weight: 500;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.attach-chip-meta { color: var(--text-muted); font-size: 0.64rem; }
+.attach-chip.error .attach-chip-meta { color: var(--status-danger); }
+.attach-chip-remove {
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  width: 18px; height: 18px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--duration-fast);
+}
+.attach-chip-remove:hover { background: var(--surface-sunken); color: var(--text-primary); }
+.attach-chip-remove svg { width: 12px; height: 12px; }
+
+/* Read-only chips shown inside a sent/replayed user message bubble */
+.message-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.attach-chip.static {
+  text-decoration: none;
+  color: inherit;
+  background: var(--surface-sunken);
+}
+a.attach-chip.static:hover { border-color: var(--agent-accent); }

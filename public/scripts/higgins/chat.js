@@ -348,7 +348,11 @@ if (navigator.platform.indexOf('Mac') === -1) document.getElementById('shortcutH
 // INPUT HANDLING
 // ============================================
 function autoGrow(el) { el.style.height = '20px'; el.style.height = Math.min(el.scrollHeight, 80) + 'px'; }
-function toggleSend() { document.getElementById('sendBtn').classList.toggle('active', document.getElementById('higginsInput').value.trim().length > 0); }
+function toggleSend() {
+  const hasText = document.getElementById('higginsInput').value.trim().length > 0;
+  const hasAtt = !!(window.HigginsAttachments && window.HigginsAttachments.hasReady());
+  document.getElementById('sendBtn').classList.toggle('active', hasText || hasAtt);
+}
 function handleKeyDown(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
 
 // ============================================
@@ -423,7 +427,14 @@ async function sendMessage(overrideText) {
   // overrideText supports programmatic continuation (e.g. after team approval)
   // without trampling the textarea or requiring the user to retype.
   const text = (typeof overrideText === 'string' ? overrideText : input.value).trim();
-  if (!text || responding) return;
+  // Attachments only apply to real user sends, not programmatic continuations.
+  const isUserSend = typeof overrideText !== 'string';
+  const atts = (isUserSend && window.HigginsAttachments) ? window.HigginsAttachments.getReady() : [];
+  if (isUserSend && window.HigginsAttachments && window.HigginsAttachments.isUploading()) {
+    showToast('Still uploading — one moment');
+    return;
+  }
+  if ((!text && atts.length === 0) || responding) return;
   if (!window.HigginsStream) {
     console.error('Higgins stream parser not loaded yet');
     return;
@@ -431,7 +442,11 @@ async function sendMessage(overrideText) {
   responding = true;
   setSendState(true);
   currentAbortController = new AbortController();
-  addMessage('user', textToHtml(text), text);
+  const userMsgEl = addMessage('user', textToHtml(text), text);
+  if (atts.length && window.HigginsAttachments) {
+    window.HigginsAttachments.renderChipsInto(userMsgEl.querySelector('.message-bubble'), atts);
+    window.HigginsAttachments.clear();
+  }
   if (typeof overrideText !== 'string') {
     input.value = ''; autoGrow(input); toggleSend();
   }
@@ -459,6 +474,7 @@ async function sendMessage(overrideText) {
       body: JSON.stringify({
         conversationId: localStorage.getItem(HIGGINS_CONV_KEY) || undefined,
         message: text,
+        attachments: atts.length ? atts : undefined,
       }),
       signal: currentAbortController.signal,
     });
@@ -639,8 +655,13 @@ async function loadConversationHistory() {
     for (const m of messages) {
       const parts = Array.isArray(m.parts) ? m.parts : [];
       const text = parts.filter(p => p && p.type === 'text').map(p => p.text || '').join('');
-      if (!text) continue;
-      addMessage(m.role === 'assistant' ? 'agent' : 'user', textToHtml(text), text);
+      const attPart = parts.find(p => p && p.type === '_attachments');
+      const atts = attPart && Array.isArray(attPart.items) ? attPart.items : [];
+      if (!text && !atts.length) continue;
+      const el = addMessage(m.role === 'assistant' ? 'agent' : 'user', textToHtml(text), text);
+      if (atts.length && window.HigginsAttachments) {
+        window.HigginsAttachments.renderChipsInto(el.querySelector('.message-bubble'), atts);
+      }
     }
 
     // Rehydrate artifact windows from prior tool calls

@@ -417,8 +417,13 @@
   <div class="conversation-stream" id="conversationStream"></div>
 
   <div class="higgins-input-area">
+    <!-- Attached files (chips) — populated by attachments.js; hidden when empty -->
+    <div class="attachment-row" id="attachmentRow" hidden></div>
     <div class="voice-input-row" id="voiceInputRow">
       <div class="text-input-wrapper" id="textInputWrapper" style="flex:1; width:100%;">
+        <button class="attach-btn" id="attachBtn" onclick="triggerAttach()" title="Attach a file (image, PDF, or text)" aria-label="Attach a file">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
         <textarea id="higginsInput" rows="1" placeholder="Message Higgins…" oninput="autoGrow(this);toggleSend();" onkeydown="handleKeyDown(event)"></textarea>
         <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send (Enter)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -428,6 +433,9 @@
         </button>
       </div>
     </div>
+    <!-- Hidden file picker driven by the + button. accept mirrors the server allowlist. -->
+    <input type="file" id="higginsFileInput" multiple hidden
+           accept="image/png,image/jpeg,image/gif,image/webp,application/pdf,text/plain,text/markdown,text/csv,application/json,.md,.csv,.txt,.json,.js,.py,.html,.css,.ts">
     <div class="input-meta">
       <span id="inputHint">Shift+Enter for new line</span>
       <span>Claude Opus 4.7</span>
@@ -445,6 +453,7 @@
 </script>
 
 <script src="/scripts/higgins/chat.js"></script>
+<script src="/scripts/higgins/attachments.js"></script>
 <script src="/scripts/higgins/mcp-connections.js"></script>
 <script src="/scripts/higgins/active-team-badge.js"></script>
 <script src="/scripts/higgins/team-modal.js"></script>
