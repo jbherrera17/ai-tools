@@ -17,6 +17,7 @@
     "dev:restart": "scripts/kill-dev.sh && vercel dev --listen 3000"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@supabase/supabase-js": "^2.45.0",
     "@vercel/blob": "^0.27.0",
     "@vercel/node": "^3.2.0",
