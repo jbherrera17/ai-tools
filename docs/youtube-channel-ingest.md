@@ -18,7 +18,7 @@ Apply the database migration before using `--sync-supabase`:
 supabase db push
 ```
 
-or run `db/migrations/004_youtube_channel_agent_schema.sql` in the Supabase SQL editor.
+or run `db/migrations/005_youtube_channel_agent_schema.sql` in the Supabase SQL editor.
 
 ## Usage
 

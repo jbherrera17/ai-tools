@@ -100,7 +100,7 @@ Producing chat text before the tool call defeats the runtime. The tool call IS t
 
 ### Available context
 - This is the AI.JBHerrera workspace at github/jbherrera/ai-tools.
-- MCP connectors available in JB's environment: Open Brain, Notion, Google Calendar, Slack, Vercel, Gmail, Google Drive. Reference them by name when an action would naturally use one — Higgins itself doesn't call them in this surface yet (the chat endpoint is its own runtime), but JB may pivot to a connector-enabled session.
+- JB's enabled MCP connections (if any) are listed in the "MCP connections" block below. Reference them by name when an action would naturally use one.
 
 ### Memory
 You have a dedicated memory store (separate from the LLM context). Five kinds: fact, preference, project, reference, summary.
@@ -117,11 +117,24 @@ Don't pile up memories. Save deliberately — high-signal facts and preferences,
 Technology should augment human brilliance, not replace it. JB's core framework is Insight 360: Align 120 → Strategy 120 → Execute 120. Speak as a partner working alongside JB, not as a tool he's instructing.
 `.trim();
 
+/** A connector row as surfaced to the prompt (subset of McpConnection). */
+export interface McpConnectionSummary {
+  name: string;
+  custom: boolean;
+  enabled: boolean;
+  url?: string | null;
+  /** True when a custom connector actually connected and contributed tools. */
+  live?: boolean;
+}
+
 interface BuildPromptOptions {
   today?: string;
   /** When provided, the active team for this conversation is appended so
    *  Higgins knows not to re-propose. */
   conversationId?: string;
+  /** Enabled MCP connections, surfaced so Higgins knows its integrations.
+   *  Custom connectors marked `live` have callable tools this turn. */
+  mcpConnections?: McpConnectionSummary[];
 }
 
 /**
@@ -151,13 +164,53 @@ export async function buildHigginsSystemPrompt(
   const overlay = RUNTIME_OVERLAY.replace('{{TODAY}}', date);
   const catalogBlock = buildCatalogBlock(catalog);
   const teamBlock = activeTeam?.roster ? buildActiveTeamBlock(activeTeam.roster) : '';
+  const mcpBlock = buildMcpConnectionsBlock(options.mcpConnections ?? []);
 
   // Order: base (identity) → overlay (runtime rules) → catalog (full
   // directory) → active team (current approved roster, so the "do not
-  // re-assemble" rule has concrete state to reference).
-  return [base, overlay, catalogBlock, teamBlock]
+  // re-assemble" rule has concrete state to reference) → MCP connections
+  // (JB's enabled integrations + which have live tools this turn).
+  return [base, overlay, catalogBlock, teamBlock, mcpBlock]
     .filter((s) => s && s.trim().length > 0)
     .join('\n\n');
+}
+
+/**
+ * Renders the enabled MCP connections into a prompt block. Custom connectors
+ * that connected this turn (`live`) expose callable `<connector>__<tool>`
+ * tools; everything else is awareness-only — Higgins can reference it but
+ * cannot call it directly from this runtime.
+ */
+function buildMcpConnectionsBlock(connections: McpConnectionSummary[]): string {
+  const enabled = connections.filter((c) => c.enabled);
+  if (enabled.length === 0) return '';
+
+  const live = enabled.filter((c) => c.custom && c.live);
+  const awareness = enabled.filter((c) => !(c.custom && c.live));
+
+  const lines: string[] = ['## MCP connections', ''];
+  lines.push('JB has enabled these MCP connections for Higgins.');
+
+  if (live.length) {
+    lines.push('');
+    lines.push(
+      '**Live tools this turn** — these custom connectors are connected and their tools are callable directly (named `<connector>__<tool>`). Use them when the task calls for it:',
+    );
+    for (const c of live) lines.push(`- ${c.name}`);
+  }
+
+  if (awareness.length) {
+    lines.push('');
+    lines.push(
+      '**Available integrations** — reference these by name when an action would naturally use one. Higgins does not call them directly from this chat runtime (they live in JB\'s connector-enabled sessions):',
+    );
+    for (const c of awareness) {
+      const note = c.custom ? ' (custom — configured but not reachable this turn)' : '';
+      lines.push(`- ${c.name}${note}`);
+    }
+  }
+
+  return lines.join('\n');
 }
 
 function buildActiveTeamBlock(roster: TeamRoster): string {

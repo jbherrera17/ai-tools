@@ -574,3 +574,60 @@ export async function getLeafSkillsForDept(dept: string): Promise<SkillRow[]> {
   if (error) throw error;
   return (data ?? []) as SkillRow[];
 }
+
+// ============================================
+// MCP CONNECTIONS — Navigate "MCP Connections" module
+// ============================================
+
+export interface McpConnection {
+  connector_id: string;
+  name: string;
+  custom: boolean;
+  enabled: boolean;
+  url: string | null;
+  updated_at: string;
+}
+
+/** All connectors configured for the owner, ordered by connector_id. */
+export async function listMcpConnections(userId: string = OWNER_USER_ID): Promise<McpConnection[]> {
+  const sb = getServiceClient();
+  const { data, error } = await sb
+    .from('higgins_mcp_connections')
+    .select('connector_id, name, custom, enabled, url, updated_at')
+    .eq('user_id', userId)
+    .order('connector_id');
+  if (error) throw error;
+  return (data ?? []) as McpConnection[];
+}
+
+/**
+ * Upsert a batch of connectors (one row per connector). Returns the full
+ * post-write set so the client can re-render from the source of truth.
+ */
+export async function upsertMcpConnections(
+  connections: Array<{
+    connector_id: string;
+    name: string;
+    custom?: boolean;
+    enabled?: boolean;
+    url?: string | null;
+  }>,
+  userId: string = OWNER_USER_ID,
+): Promise<McpConnection[]> {
+  const sb = getServiceClient();
+  const now = new Date().toISOString();
+  const rows = connections.map((c) => ({
+    connector_id: c.connector_id,
+    user_id: userId,
+    name: c.name,
+    custom: c.custom ?? false,
+    enabled: c.enabled ?? false,
+    url: c.url ?? null,
+    updated_at: now,
+  }));
+  const { error } = await sb
+    .from('higgins_mcp_connections')
+    .upsert(rows, { onConflict: 'connector_id' });
+  if (error) throw error;
+  return listMcpConnections(userId);
+}
