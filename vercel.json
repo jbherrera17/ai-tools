@@ -21,6 +21,7 @@
     { "source": "/ai-stack", "destination": "/ai-stack.html" },
     { "source": "/higgins2", "destination": "/higgins2.html" },
     { "source": "/ca-bill-tracker", "destination": "/ca-bill-tracker.html" },
+    { "source": "/ai-readiness", "destination": "/ai-readiness.html" },
     { "source": "/", "destination": "/index.html" }
   ]
 }

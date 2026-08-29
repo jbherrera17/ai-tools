@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Readiness Assessment — AI.JBHerrera</title>
+    <meta name="description" content="An 18-question assessment that scores your business across six areas of AI readiness, then hands you a written plan — findings, next steps, an upskilling plan, and suggested AI projects with pricing."/>
+
+    <!-- Theme: set before paint to avoid light-flash for dark users -->
+    <script>
+      (function(){
+        var s = localStorage.getItem('theme');
+        var d = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', s || d);
+      })();
+    </script>
+
+    <link rel="stylesheet" href="/styles/base.css"/>
+
+    <style>
+        /* Page-specific styles for /ai-readiness. Tokens only — no hex literals. */
+
+        .ha-shell { max-width: 760px; margin: 0 auto; }
+
+        /* Entry: two ways to start, side by side on wide screens */
+        .ha-entry {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-5);
+            margin-bottom: var(--space-10);
+        }
+        @media (max-width: 700px) {
+            .ha-entry { grid-template-columns: 1fr; }
+        }
+        .ha-entry-card { display: flex; flex-direction: column; }
+        .ha-entry-card h3 { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: var(--space-2); }
+        .ha-entry-card p { color: var(--color-text-secondary); font-size: 14px; line-height: 1.55; flex-grow: 1; margin-bottom: var(--space-4); }
+        .ha-contract {
+            display: flex; flex-wrap: wrap; gap: var(--space-4);
+            margin: var(--space-4) 0;
+            font-size: 13px; color: var(--color-text-secondary);
+        }
+        .ha-contract span { display: inline-flex; align-items: center; gap: 6px; }
+        .ha-contract svg { width: 15px; height: 15px; flex-shrink: 0; color: var(--color-text-tertiary); }
+        .ha-upload-label {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 12px 22px; border-radius: var(--radius-full);
+            background: var(--color-bg-secondary); color: var(--color-text);
+            font-size: 15px; font-weight: 500; cursor: pointer;
+            border: 1px solid var(--color-border);
+            transition: background var(--duration-fast) var(--ease-out);
+        }
+        .ha-upload-label:hover { background: var(--color-border-subtle); }
+        .ha-upload-label input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+        .ha-upload-status { font-size: 13px; color: var(--color-text-secondary); margin-top: var(--space-3); min-height: 18px; }
+        .ha-upload-status.is-error { color: var(--color-danger); }
+
+        /* Chat panel */
+        .ha-panel { background: var(--color-surface); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-lg); overflow: hidden; }
+        .ha-panel-top { padding: var(--space-4) var(--space-5) var(--space-3); border-bottom: 1px solid var(--color-border-subtle); position: sticky; top: var(--nav-height); background: var(--color-surface); z-index: 5; }
+        .ha-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3); }
+        .ha-who { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; }
+        .ha-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-success); }
+        .ha-progress-text { font-size: 13px; color: var(--color-text-secondary); }
+        .ha-bar { height: 4px; border-radius: var(--radius-full); background: var(--color-bg-secondary); overflow: hidden; margin-bottom: var(--space-3); }
+        .ha-bar-fill { height: 100%; width: 0%; background: var(--gradient-brand); transition: width var(--duration-slow) var(--ease-out); }
+        .ha-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+        .ha-pill { font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: var(--radius-full); background: var(--color-bg-secondary); color: var(--color-text-tertiary); }
+        .ha-pill.is-active { background: var(--color-primary-soft); color: var(--color-primary); }
+        .ha-pill.is-done { background: rgba(52,199,89,0.14); color: #1f8a3d; }
+        [data-theme="dark"] .ha-pill.is-done { color: #6ee49a; }
+
+        .ha-log { max-height: 440px; overflow-y: auto; padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-3); }
+        .ha-msg { max-width: 80%; padding: 10px 14px; border-radius: var(--radius-md); font-size: 15px; line-height: 1.5; white-space: pre-wrap; }
+        .ha-msg-bot { align-self: flex-start; background: var(--color-bg-secondary); color: var(--color-text); border-bottom-left-radius: 4px; }
+        .ha-msg-user { align-self: flex-end; background: var(--color-primary); color: #fff; border-bottom-right-radius: 4px; }
+        .ha-divider { align-self: center; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-text-tertiary); margin: var(--space-2) 0; }
+        .ha-typing { display: inline-flex; gap: 4px; }
+        .ha-typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--color-text-tertiary); display: inline-block; animation: ha-bounce 1.1s infinite ease-in-out; }
+        .ha-typing i:nth-child(2) { animation-delay: 0.15s; }
+        .ha-typing i:nth-child(3) { animation-delay: 0.3s; }
+        @keyframes ha-bounce { 0%, 80%, 100% { transform: translateY(0); opacity: 0.5; } 40% { transform: translateY(-4px); opacity: 1; } }
+        .ha-scoring-note { font-size: 13px; color: var(--color-text-secondary); padding: 0 var(--space-5); margin-top: -8px; }
+
+        .ha-foot { padding: var(--space-4) var(--space-5) var(--space-5); border-top: 1px solid var(--color-border-subtle); }
+        .ha-replies { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: var(--space-3); }
+        .ha-reply { font-size: 14px; font-weight: 500; padding: 8px 16px; border-radius: var(--radius-full); background: var(--color-bg-secondary); color: var(--color-text); border: 1px solid var(--color-border-subtle); cursor: pointer; transition: background var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out); }
+        .ha-reply:hover { background: var(--color-primary-soft); border-color: var(--color-primary); color: var(--color-primary); }
+        .ha-reply:disabled { opacity: 0.5; cursor: default; }
+        .ha-compose { display: flex; gap: 8px; }
+        .ha-compose input { flex: 1; }
+        .ha-hint { font-size: 12px; color: var(--color-text-tertiary); margin-top: var(--space-2); }
+
+        .ha-error { background: rgba(255,59,48,0.10); color: var(--color-danger); border: 1px solid rgba(255,59,48,0.25); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); font-size: 14px; margin-top: var(--space-4); }
+
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+        /* Report */
+        .ha-report { margin-top: var(--space-10); }
+        .ha-report-head { text-align: center; margin-bottom: var(--space-6); }
+        .ha-rh-org { font-size: 13px; font-weight: 600; color: var(--color-primary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: var(--space-2); }
+        .ha-rh-title { font-size: 24px; font-weight: 600; letter-spacing: -0.015em; }
+        .ha-rh-meta { font-size: 13px; color: var(--color-text-tertiary); margin-top: var(--space-2); }
+        .ha-rh-meta span + span::before { content: ' · '; }
+
+        .ha-restored-note { background: var(--color-primary-soft); color: var(--color-primary); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); font-size: 14px; margin-bottom: var(--space-6); }
+
+        .ha-report-intro { background: var(--color-bg-secondary); border-radius: var(--radius-lg); padding: var(--space-5); margin-bottom: var(--space-6); }
+        .ha-report-intro h4 { font-size: 15px; font-weight: 600; margin-bottom: var(--space-2); }
+        .ha-report-intro p { font-size: 14px; color: var(--color-text-secondary); line-height: 1.55; }
+        .ha-report-intro p + p { margin-top: var(--space-2); }
+
+        .ha-verdict { display: flex; align-items: center; gap: var(--space-6); background: var(--color-surface); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-6); }
+        .ha-radar { width: 220px; height: 220px; flex-shrink: 0; }
+        .ha-stage-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-text-tertiary); }
+        .ha-stage-name { font-size: 20px; font-weight: 600; margin: 4px 0 var(--space-2); }
+        .ha-stage-name em { font-style: normal; color: var(--color-primary); }
+        .ha-score-row { display: flex; align-items: baseline; gap: 6px; margin-bottom: var(--space-2); }
+        .ha-score-num { font-size: 40px; font-weight: 600; letter-spacing: -0.02em; }
+        .ha-score-of { font-size: 14px; color: var(--color-text-secondary); }
+        .ha-headline { font-size: 15px; color: var(--color-text-secondary); line-height: 1.5; }
+        @media (max-width: 620px) { .ha-verdict { flex-direction: column; text-align: center; } }
+
+        .ha-areas { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-6); }
+        @media (max-width: 620px) { .ha-areas { grid-template-columns: 1fr; } }
+        .ha-area { background: var(--color-surface); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-md); padding: var(--space-4); }
+        .ha-area-top { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-2); }
+        .ha-area-name { font-size: 14px; font-weight: 600; }
+        .ha-area-name em { font-style: normal; color: var(--color-text-tertiary); font-weight: 400; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; margin-left: 4px; }
+        .ha-area-score { display: flex; align-items: baseline; gap: 4px; flex-shrink: 0; }
+        .ha-area-score-label { font-size: 11px; color: var(--color-text-tertiary); }
+        .ha-area-score-num { font-size: 15px; font-weight: 600; }
+        .ha-meter { height: 6px; border-radius: var(--radius-full); background: var(--color-bg-secondary); overflow: hidden; margin-bottom: var(--space-3); }
+        .ha-meter-fill { height: 100%; width: 0%; background: var(--gradient-brand); transition: width 0.9s var(--ease-out); }
+        .ha-area-verdict { font-size: 13px; color: var(--color-text-secondary); line-height: 1.5; }
+        .ha-area-detail { margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--color-border-subtle); }
+        .ha-area-detail h5 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-tertiary); margin-bottom: 6px; }
+        .ha-area-detail h5 + h5 { margin-top: var(--space-3); }
+        .ha-area-detail ul { padding-left: 18px; font-size: 13px; color: var(--color-text-secondary); line-height: 1.55; }
+
+        .ha-gate { background: var(--color-surface); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-6); }
+        .ha-gate h4 { font-size: 18px; font-weight: 600; margin-bottom: var(--space-2); }
+        .ha-gate > p { color: var(--color-text-secondary); font-size: 14px; margin-bottom: var(--space-3); }
+        .ha-gate-list { padding-left: 18px; font-size: 14px; color: var(--color-text-secondary); line-height: 1.7; margin-bottom: var(--space-4); }
+        .ha-peek { font-size: 14px; color: var(--color-text-secondary); font-style: italic; background: var(--color-bg-secondary); border-radius: var(--radius-md); padding: var(--space-4); margin-bottom: var(--space-4); }
+        .ha-gate-form { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+        .ha-gate-form input { flex: 1; min-width: 180px; }
+        .ha-privacy { font-size: 12px; color: var(--color-text-tertiary); margin-top: var(--space-3); }
+
+        .ha-steps, .ha-projects, .ha-upskill { background: var(--color-surface); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-6); }
+        .ha-steps h4, .ha-projects h4, .ha-upskill h4 { font-size: 18px; font-weight: 600; margin-bottom: var(--space-2); }
+        .ha-steps > p, .ha-projects > p { color: var(--color-text-secondary); font-size: 14px; margin-bottom: var(--space-4); }
+
+        .ha-step { display: flex; gap: var(--space-4); padding: var(--space-4) 0; border-top: 1px solid var(--color-border-subtle); }
+        .ha-step:first-child { border-top: none; padding-top: 0; }
+        .ha-step-num { width: 28px; height: 28px; border-radius: 50%; background: var(--color-primary-soft); color: var(--color-primary); font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .ha-step-when { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-tertiary); margin-bottom: 4px; }
+        .ha-step-what { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+        .ha-step-why { font-size: 13px; color: var(--color-text-secondary); line-height: 1.5; }
+
+        .ha-project { background: var(--color-bg-secondary); border-radius: var(--radius-md); padding: var(--space-4); margin-bottom: var(--space-3); }
+        .ha-project:last-child { margin-bottom: 0; }
+        .ha-project-top { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-2); }
+        .ha-project-name { font-size: 15px; font-weight: 600; }
+        .ha-project-when { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-tertiary); flex-shrink: 0; }
+        .ha-project-line { font-size: 13px; color: var(--color-text-secondary); line-height: 1.55; margin-bottom: 4px; }
+        .ha-project-line strong { color: var(--color-text); font-weight: 600; }
+        .ha-project-plan { font-size: 13px; font-weight: 600; color: var(--color-primary); margin: var(--space-2) 0 4px; }
+        .ha-project-why { font-size: 12px; color: var(--color-text-tertiary); font-style: italic; }
+
+        .ha-track { background: var(--color-bg-secondary); border-radius: var(--radius-md); padding: var(--space-4); margin-bottom: var(--space-3); }
+        .ha-track:last-child { margin-bottom: 0; }
+        .ha-track-role { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+        .ha-track-focus { font-size: 13px; color: var(--color-text-secondary); line-height: 1.5; margin-bottom: var(--space-2); }
+        .ha-track-modules { padding-left: 18px; font-size: 13px; color: var(--color-text-secondary); line-height: 1.6; margin-bottom: var(--space-2); }
+        .ha-track-first { font-size: 13px; color: var(--color-text-secondary); }
+        .ha-track-first strong { color: var(--color-text); font-weight: 600; }
+        .ha-upskill-philosophy { font-size: 14px; color: var(--color-text-secondary); line-height: 1.55; margin-bottom: var(--space-4); }
+
+        .ha-actions { display: flex; gap: var(--space-3); flex-wrap: wrap; }
+    </style>
+</head>
+<body class="page-ai-readiness">
+
+<!-- Nav (keep links in sync across every page; mark current with class="active") -->
+<nav class="navbar">
+  <a href="/" class="navbar-brand">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <path d="M12 16v-4"></path>
+      <path d="M12 8h.01"></path>
+    </svg>
+    AI.JBHerrera
+  </a>
+  <div class="navbar-links">
+    <a href="/digest"          class="navbar-link">AI Digest</a>
+    <a href="/ai-stack"        class="navbar-link">AI Stack</a>
+    <a href="/skills"          class="navbar-link">Skills</a>
+    <a href="/higgins2"        class="navbar-link">Higgins 2.0</a>
+    <a href="/ca-bill-tracker" class="navbar-link">CA Bills</a>
+    <a href="/ai-readiness"    class="navbar-link active">AI Readiness</a>
+    <a href="https://jbherrera.com" class="navbar-link" target="_blank" rel="noopener">Main Site</a>
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg class="icon-sun"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+    </button>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header class="hero">
+    <div class="hero-tag">AI Readiness Assessment</div>
+    <h1 class="text-display">Find Your Place on the AI Readiness Spectrum</h1>
+    <p>18 short questions about your business, your team, your systems, and your data. In return: a scored report across six areas, a plan for what to do first, and a few AI projects worth considering — each with real pricing.</p>
+</header>
+
+<!-- Main content -->
+<main class="container section">
+    <div class="ha-shell" id="ha">
+
+        <!-- Two entry points -->
+        <div class="ha-entry" data-ha="intro">
+            <div class="card ha-entry-card">
+                <h3>Take the assessment</h3>
+                <p>About 8 minutes. Your score is free — the full written report costs nothing but your email address.</p>
+                <div class="ha-contract">
+                    <span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                        ~8 minutes
+                    </span>
+                    <span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                        Score is free
+                    </span>
+                </div>
+                <button type="button" class="btn btn-primary btn-lg" data-ha="start">Start the assessment</button>
+            </div>
+
+            <div class="card ha-entry-card">
+                <h3>Upload a previous report</h3>
+                <p>Already took this assessment — here or on Synergi AI's site — and saved the PDF? Restore your exact report, no email required.</p>
+                <label class="ha-upload-label" for="haUpload">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    Upload a previous report
+                </label>
+                <input type="file" id="haUpload" data-ha="upload" accept="application/pdf">
+                <div class="ha-upload-status" data-ha="uploadStatus"></div>
+            </div>
+        </div>
+
+        <!-- Chat panel -->
+        <div class="ha-panel" data-ha="panel" hidden>
+            <div class="ha-panel-top">
+                <div class="ha-head">
+                    <span class="ha-who"><span class="ha-dot"></span> Higgins</span>
+                    <span class="ha-progress-text" data-ha="progress">Getting started&hellip;</span>
+                </div>
+                <div class="ha-bar"><div class="ha-bar-fill" data-ha="bar"></div></div>
+                <div class="ha-pills">
+                    <span class="ha-pill" data-ha-pill="business_alignment">Alignment</span>
+                    <span class="ha-pill" data-ha-pill="infrastructure">Systems</span>
+                    <span class="ha-pill" data-ha-pill="culture_leadership">Team</span>
+                    <span class="ha-pill" data-ha-pill="data_quality">Data</span>
+                    <span class="ha-pill" data-ha-pill="use_case_clarity">Use cases</span>
+                    <span class="ha-pill" data-ha-pill="resourcing_budget">Resources</span>
+                </div>
+            </div>
+
+            <div class="ha-log" data-ha="log" role="log" aria-live="polite" aria-label="Assessment conversation"></div>
+
+            <div class="ha-foot">
+                <div class="ha-replies" data-ha="replies"></div>
+                <form class="ha-compose" data-ha="compose">
+                    <label class="sr-only" for="haInput">Your answer</label>
+                    <input type="text" id="haInput" class="input" data-ha="input" placeholder="Or answer in your own words&hellip;" autocomplete="off" maxlength="1200">
+                    <button type="submit" class="btn btn-primary" data-ha="send">Send</button>
+                </form>
+                <p class="ha-hint">Pick an option or type your own answer — whichever fits better.</p>
+            </div>
+        </div>
+
+        <div class="ha-error" data-ha="error" role="alert" hidden></div>
+
+        <!-- Report -->
+        <div class="ha-report" data-ha="report" hidden>
+
+            <div class="ha-report-head" data-ha="reportHead" hidden>
+                <div class="ha-rh-org" data-ha="reportOrg"></div>
+                <div class="ha-rh-title">AI Readiness Report</div>
+                <div class="ha-rh-meta">
+                    <span data-ha="reportDate"></span>
+                </div>
+            </div>
+
+            <div class="ha-restored-note" data-ha="restoredNote" hidden></div>
+
+            <div class="ha-report-intro" data-ha="reportIntro" hidden>
+                <h4>About this report</h4>
+                <p>Higgins asked 18 short questions about how your business runs today. Your answers map to six sections, each scored out of 100, and set the order of what to do next — sequence matters more than the list.</p>
+                <p>Readiness has less to do with technology than whether the ground is ready for it. A low section score isn't a failure; it's where to start.</p>
+            </div>
+
+            <div class="ha-verdict">
+                <svg class="ha-radar" data-ha="radar" viewBox="0 0 400 400"></svg>
+                <div>
+                    <div class="ha-stage-label">Where you stand</div>
+                    <div class="ha-stage-name" data-ha="stageName"></div>
+                    <div class="ha-score-row">
+                        <span class="ha-score-num" data-ha="scoreNum">0</span>
+                        <span class="ha-score-of">/ 100 overall</span>
+                    </div>
+                    <p class="ha-headline" data-ha="headline"></p>
+                </div>
+            </div>
+
+            <div class="ha-areas" data-ha="areas"></div>
+
+            <div class="ha-gate" data-ha="gate">
+                <h4>Your full written report</h4>
+                <p>You've got your score. The written report goes further:</p>
+                <ul class="ha-gate-list">
+                    <li>What your answers show in each of the six areas</li>
+                    <li>Specific next steps, in the order they should happen</li>
+                    <li>A team upskilling plan built around what you told us</li>
+                    <li>2&ndash;4 suggested AI projects, each with a recommended plan and rough investment</li>
+                </ul>
+                <div class="ha-peek" data-ha="peek"></div>
+                <form class="ha-gate-form" data-ha="gateForm">
+                    <label class="sr-only" for="haEmail">Email address</label>
+                    <input type="email" id="haEmail" class="input" data-ha="email" placeholder="you@yourcompany.com" required autocomplete="email">
+                    <label class="sr-only" for="haCompany">Company</label>
+                    <input type="text" id="haCompany" class="input" data-ha="company" placeholder="Company name" autocomplete="organization" required maxlength="120">
+                    <button type="submit" class="btn btn-primary">Unlock the report</button>
+                </form>
+                <p class="ha-privacy">We'll send your report and occasional AI-readiness insights. Unsubscribe anytime. We don't sell or share your details.</p>
+            </div>
+
+            <div class="ha-steps" data-ha="steps" hidden>
+                <h4>What to do, in order</h4>
+                <p>Sequence matters more than the list. Each step makes the next one possible.</p>
+                <div data-ha="stepList"></div>
+            </div>
+
+            <div class="ha-projects" data-ha="projects" hidden>
+                <h4>Suggested AI projects</h4>
+                <p>Specific to what you told us — not a generic list.</p>
+                <div data-ha="projectList"></div>
+            </div>
+
+            <div class="ha-upskill" data-ha="upskill" hidden>
+                <h4>Upskilling your team</h4>
+                <p class="ha-upskill-philosophy" data-ha="upskillPhilosophy"></p>
+                <div data-ha="upskillTracks"></div>
+            </div>
+
+            <div class="ha-actions" data-ha="finalActions" hidden>
+                <a href="https://calendly.com/jb-synergi/30min" class="btn btn-primary" target="_blank" rel="noopener">Talk through your results with JB</a>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<!-- Footer -->
+<footer class="site-footer">
+    &copy; 2026 <a href="https://jbherrera.com" target="_blank" rel="noopener">JBHerrera.com</a> &nbsp;·&nbsp; AI tools for the independent professional &nbsp;·&nbsp; Assessment powered by <a href="https://synergiai.io" target="_blank" rel="noopener">Synergi AI</a>
+</footer>
+
+<script>
+  document.getElementById('themeToggle').addEventListener('click', function(){
+    var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+  });
+</script>
+<script src="/scripts/ai-readiness.js"></script>
+
+</body>
+</html>
