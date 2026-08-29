@@ -44,6 +44,9 @@ AIDevelopment/venv/
 # Local-only working directories
 MyAgentSkills/
 
+# Recovered Higgins artifacts (local-only export, not source)
+recovered-artifacts/
+
 # Temp file from 'vercel env pull' — contains secrets, never commit
 .env.vercel*
 .env*.local
