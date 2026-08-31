@@ -115,21 +115,15 @@
   }
 
   /**
-   * Height of the sticky navbar, published as a CSS variable. Measured
-   * rather than trusted as a constant: base.css defines --nav-height as a
-   * fixed token today, but a future navbar tweak (e.g. a scrolled-state
-   * height change, as synergi-website's has) would silently desync a
-   * hardcoded number here. Cheap to measure, so just measure it.
+   * Real navbar height, used only to clear it when jumping the page to the
+   * panel (see anchorToTop). Measured rather than trusted as a constant:
+   * base.css defines --nav-height as a fixed token today, but a future
+   * navbar tweak would silently desync a hardcoded number here.
    */
-  function syncNavHeight() {
+  function navHeight() {
     var nav = document.querySelector('.navbar');
-    var h = nav ? Math.round(nav.getBoundingClientRect().height) : 56;
-    document.documentElement.style.setProperty('--ha-nav-h', h + 'px');
-    return h;
+    return nav ? Math.round(nav.getBoundingClientRect().height) : 56;
   }
-
-  syncNavHeight();
-  window.addEventListener('resize', syncNavHeight);
 
   /**
    * Put a node's top edge just under the navbar, instantly.
@@ -143,7 +137,7 @@
   function anchorToTop(node) {
     if (!node) return;
     var se = document.scrollingElement || document.documentElement;
-    var y = node.getBoundingClientRect().top + se.scrollTop - syncNavHeight() - 12;
+    var y = node.getBoundingClientRect().top + se.scrollTop - navHeight() - 12;
     var prior = se.style.scrollBehavior;
     se.style.scrollBehavior = 'auto';
     se.scrollTop = Math.max(0, y);
