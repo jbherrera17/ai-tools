@@ -15,6 +15,7 @@ Then in `<slug>.html`:
 - Replace `PAGE TITLE`, `EYEBROW`, `PAGE HEADLINE`, the subhead, and the `<meta description>`.
 - Change `body class="page-PAGESLUG"` to a unique class (e.g. `page-bills`).
 - In the navbar block, add `class="active"` to the link that matches this new page.
+- Leave the Insight 360 chatbot widget snippet at the bottom of `<body>` in place. It is site-wide and every page must carry it.
 
 ### 2. Add the link to every other page's navbar
 
