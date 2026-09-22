@@ -12,9 +12,9 @@
 
 export type GatewayByok = Record<string, Array<{ apiKey: string }>>;
 
-export interface GatewayProviderOptions {
+export type GatewayProviderOptions = {
   gateway: { byok: GatewayByok };
-}
+};
 
 export function getGatewayProviderOptions(): GatewayProviderOptions | undefined {
   const byok: GatewayByok = {};

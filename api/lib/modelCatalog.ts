@@ -1,5 +1,7 @@
 /**
  * Curated Higgins model catalog — single source of truth.
+ * Verified 2026-09-22 against https://ai-gateway.vercel.sh/v1/models.
+ * See docs/model-catalog.md for vendor sources and update checks.
  *
  * IDs are Vercel AI Gateway strings (`provider/model`). User-supplied
  * request models MUST be in this list. Env defaults (HIGGINS_MODEL,
@@ -17,9 +19,23 @@ export interface CatalogModel {
 export const FALLBACK_HIGGINS_MODEL = 'anthropic/claude-opus-5';
 export const FALLBACK_DEPT_MODEL = 'anthropic/claude-sonnet-5';
 
-const GROUP_ORDER = ['Anthropic', 'OpenAI', 'Grok', 'Gemini', 'Open source'] as const;
+const GROUP_ORDER = ['Anthropic', 'OpenAI', 'Grok', 'Gemini', 'DeepSeek', 'Meta', 'Mistral', 'Gemma'] as const;
 
 export const MODEL_CATALOG: CatalogModel[] = [
+  {
+    id: 'anthropic/claude-opus-5.5',
+    name: 'Claude Opus 5.5',
+    provider: 'anthropic',
+    group: 'Anthropic',
+    description: 'Latest Opus — agentic coding and knowledge work',
+  },
+  {
+    id: 'anthropic/claude-fable-5.1',
+    name: 'Claude Fable 5.1',
+    provider: 'anthropic',
+    group: 'Anthropic',
+    description: 'Demanding reasoning and long-running agent tasks',
+  },
   {
     id: 'anthropic/claude-opus-5',
     name: 'Claude Opus 5',
@@ -39,7 +55,7 @@ export const MODEL_CATALOG: CatalogModel[] = [
     name: 'Claude Opus 4.7',
     provider: 'anthropic',
     group: 'Anthropic',
-    description: 'Current production Higgins model',
+    description: 'Earlier Opus generation',
   },
   {
     id: 'anthropic/claude-sonnet-5',
@@ -63,11 +79,32 @@ export const MODEL_CATALOG: CatalogModel[] = [
     description: 'Fastest Claude — light tasks',
   },
   {
+    id: 'openai/gpt-6-astra',
+    name: 'GPT-6 Astra',
+    provider: 'openai',
+    group: 'OpenAI',
+    description: 'Complex reasoning and coding',
+  },
+  {
+    id: 'openai/gpt-6-sol',
+    name: 'GPT-6 Sol',
+    provider: 'openai',
+    group: 'OpenAI',
+    description: 'Balanced intelligence and cost',
+  },
+  {
+    id: 'openai/gpt-6-luna',
+    name: 'GPT-6 Luna',
+    provider: 'openai',
+    group: 'OpenAI',
+    description: 'Efficient high-volume tasks',
+  },
+  {
     id: 'openai/gpt-5.5',
     name: 'GPT-5.5',
     provider: 'openai',
     group: 'OpenAI',
-    description: 'Latest GPT flagship',
+    description: 'Previous GPT flagship',
   },
   {
     id: 'openai/gpt-5.4',
@@ -91,32 +128,53 @@ export const MODEL_CATALOG: CatalogModel[] = [
     description: 'Proven GPT-4.1',
   },
   {
-    id: 'xai/grok-4.6',
+    id: 'spacexai/grok-4.7',
+    name: 'Grok 4.7',
+    provider: 'xai',
+    group: 'Grok',
+    description: 'Latest Grok — coding and agentic tasks',
+  },
+  {
+    id: 'spacexai/grok-4.6',
     name: 'Grok 4.6',
     provider: 'xai',
     group: 'Grok',
-    description: 'Latest Grok',
+    description: 'Previous Grok generation',
   },
   {
-    id: 'xai/grok-4.5',
+    id: 'spacexai/grok-4.5',
     name: 'Grok 4.5',
     provider: 'xai',
     group: 'Grok',
     description: 'Previous Grok generation',
   },
   {
-    id: 'xai/grok-4.3',
+    id: 'spacexai/grok-4.3',
     name: 'Grok 4.3',
     provider: 'xai',
     group: 'Grok',
     description: 'Earlier Grok 4.x',
   },
   {
+    id: 'google/gemini-3.8-flash',
+    name: 'Gemini 3.8 Flash',
+    provider: 'google',
+    group: 'Gemini',
+    description: 'Latest Gemini Flash — reasoning and agents',
+  },
+  {
+    id: 'google/gemini-3.5-flash-lite',
+    name: 'Gemini 3.5 Flash-Lite',
+    provider: 'google',
+    group: 'Gemini',
+    description: 'Efficient lightweight Gemini tasks',
+  },
+  {
     id: 'google/gemini-3.7-flash',
     name: 'Gemini 3.7 Flash',
     provider: 'google',
     group: 'Gemini',
-    description: 'Latest Gemini Flash',
+    description: 'Previous Gemini Flash generation',
   },
   {
     id: 'google/gemini-3.5-flash',
@@ -133,38 +191,66 @@ export const MODEL_CATALOG: CatalogModel[] = [
     description: 'Gemini Pro preview',
   },
   {
+    id: 'deepseek/deepseek-v4.1-flash',
+    name: 'DeepSeek V4.1 Flash',
+    provider: 'deepseek',
+    group: 'DeepSeek',
+    description: 'Latest DeepSeek Flash with vision',
+  },
+  {
+    id: 'deepseek/deepseek-v4-pro-0813',
+    name: 'DeepSeek V4 Pro 0813',
+    provider: 'deepseek',
+    group: 'DeepSeek',
+    description: 'Updated DeepSeek V4 Pro checkpoint',
+  },
+  {
     id: 'deepseek/deepseek-v4-pro',
     name: 'DeepSeek V4 Pro',
     provider: 'deepseek',
-    group: 'Open source',
+    group: 'DeepSeek',
     description: 'DeepSeek V4 Pro via Gateway',
   },
   {
     id: 'deepseek/deepseek-v4-flash',
     name: 'DeepSeek V4 Flash',
     provider: 'deepseek',
-    group: 'Open source',
+    group: 'DeepSeek',
     description: 'Fast DeepSeek V4',
+  },
+  {
+    id: 'meta/muse-spark-1.3',
+    name: 'Muse Spark 1.3',
+    provider: 'meta',
+    group: 'Meta',
+    description: 'Latest Muse Spark — reasoning and agentic tasks',
   },
   {
     id: 'meta/llama-4-maverick',
     name: 'Llama 4 Maverick',
     provider: 'meta',
-    group: 'Open source',
+    group: 'Meta',
     description: 'Llama 4 Maverick via Gateway',
+  },
+  {
+    id: 'mistral/mistral-medium-3.5',
+    name: 'Mistral Medium 3.5',
+    provider: 'mistral',
+    group: 'Mistral',
+    description: 'Multimodal reasoning and coding',
   },
   {
     id: 'mistral/mistral-large-3',
     name: 'Mistral Large 3',
     provider: 'mistral',
-    group: 'Open source',
+    group: 'Mistral',
     description: 'Mistral Large 3 via Gateway',
   },
   {
     id: 'google/gemma-4-31b-it',
     name: 'Gemma 4 31B',
     provider: 'google',
-    group: 'Open source',
+    group: 'Gemma',
     description: 'Gemma 4 31B instruct via Gateway',
   },
 ];
