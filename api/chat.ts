@@ -25,6 +25,7 @@ import { makeTeamTools } from './lib/teamTools.js';
 import { embedText } from './lib/embeddings.js';
 import { getGatewayProviderOptions } from './lib/gatewayByok.js';
 import { getDefaultHigginsModel, isAllowedModel } from './lib/modelCatalog.js';
+import { makeWebSearchTools, WEB_SEARCH_INSTRUCTIONS } from './lib/webSearchTools.js';
 
 /**
  * Higgins 2.0 streaming chat endpoint — REQ-002 Phase 2.
@@ -399,13 +400,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const result = streamText({
     model,
-    system: systemPrompt + memoryBlock,
+    system: systemPrompt + memoryBlock + WEB_SEARCH_INSTRUCTIONS,
     messages: modelMessages,
     tools: {
       ...makeArtifactTools(conversationId),
       ...makeMemoryTools(conversationId),
       ...makeTeamTools(conversationId),
       ...mcpToolset.tools,
+      ...makeWebSearchTools(),
     },
     providerOptions: getGatewayProviderOptions(),
     prepareStep: ({ stepNumber }) => {
@@ -418,7 +420,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return {};
     },
     stopWhen: stepCountIs(8),  // bound tool loops
-    onFinish: async ({ text, toolCalls }) => {
+    onFinish: async ({ text, steps }) => {
+      const toolCalls = steps.flatMap((step) => step.toolCalls);
       const toolCallCount = Array.isArray(toolCalls) ? toolCalls.length : 0;
       console.log('[higgins/chat] onFinish', { textLen: text?.length ?? 0, toolCallCount });
       try {
