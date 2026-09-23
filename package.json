@@ -7,6 +7,7 @@
     "node": ">=20"
   },
   "scripts": {
+    "test:web-search": "node --import tsx --test scripts/web-search.test.ts",
     "typecheck": "tsc --noEmit",
     "ingest:youtube": "tsx scripts/youtube-channel-ingest.ts",
     "smoke:higgins-repo": "tsx scripts/smoke-higgins-repo.ts",

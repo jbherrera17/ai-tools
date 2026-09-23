@@ -507,7 +507,11 @@ async function sendMessage(overrideText) {
       } else if (t === 'tool-input-start' && part.toolName) {
         updateThinkingText(TOOL_LABELS[part.toolName] || ('Calling ' + part.toolName + '…'));
       } else if (t === 'tool-input-available' && part.toolName) {
-        advanceFromThinking();
+        if (part.toolName === 'web_search') {
+          updateThinkingText(TOOL_LABELS.web_search);
+        } else {
+          advanceFromThinking();
+        }
         try {
           if (part.toolName === 'create_artifact' && window.ArtifactWindow) {
             window.ArtifactWindow.openOrUpdate(part.input.id, {
@@ -720,6 +724,7 @@ async function copyMessageSource(btn) {
 
 // Per-tool labels for the loading indicator
 const TOOL_LABELS = {
+  web_search: 'Searching the web…',
   create_artifact: 'Opening an artifact…',
   update_artifact: 'Revising the artifact…',
   save_memory: 'Saving to memory…',
