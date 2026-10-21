@@ -30,7 +30,9 @@ The navbar is duplicated across every `public/*.html`. When you add a page, upda
 - `public/admin.html` (admin nav is its own variant — match the pattern there)
 - `public/_template/page.html` (so future pages inherit the new link)
 
-Use the same order on every page. Current order: `AI Digest`, `AI Stack`, `Skills`, `Higgins 2.0`, `CA Bills`, `Main Site`.
+Use the same order on every page. Current order: `AI Digest`, `AI Stack`, `Skills`, `Higgins 2.0`, `Ballot Lens`, `AI Readiness`, `Main Site`.
+
+Ballot Lens links to `https://ballotlens.jbherrera.com` on every page. Higgins 2.0 links to `https://higgins.jbherrera.com`; the former `/higgins2` and `/higgins2.html` routes permanently redirect there.
 
 ### 3. Add an app card to the index grid
 

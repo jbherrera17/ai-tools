@@ -7,6 +7,10 @@
       "maxDuration": 300
     }
   },
+  "redirects": [
+    { "source": "/higgins2", "destination": "https://higgins.jbherrera.com", "permanent": true },
+    { "source": "/higgins2.html", "destination": "https://higgins.jbherrera.com", "permanent": true }
+  ],
   "rewrites": [
     { "source": "/api/admin/feeds/:path*", "destination": "/api/admin/feeds" },
     { "source": "/api/admin/icps/:path*", "destination": "/api/admin/icps" },
@@ -19,7 +23,6 @@
     { "source": "/admin", "destination": "/admin.html" },
     { "source": "/skills", "destination": "/skills.html" },
     { "source": "/ai-stack", "destination": "/ai-stack.html" },
-    { "source": "/higgins2", "destination": "/higgins2.html" },
     { "source": "/ca-bill-tracker", "destination": "/ca-bill-tracker.html" },
     { "source": "/ai-readiness", "destination": "/ai-readiness.html" },
     { "source": "/", "destination": "/index.html" }
